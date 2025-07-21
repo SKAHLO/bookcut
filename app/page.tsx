@@ -1,103 +1,190 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { useAuth } from "@/contexts/AuthContext"
+import { useRouter } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Scissors, MapPin, Clock, Star } from "lucide-react"
+
+export default function HomePage() {
+  const { user, login, signup, loading } = useAuth()
+  const router = useRouter()
+  const [isLogin, setIsLogin] = useState(true)
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    name: "",
+    phone: "",
+    userType: "user",
+    location: { address: "", coordinates: [0, 0] },
+  })
+
+  useEffect(() => {
+    if (!loading && user) {
+      if (user.userType === "barber") {
+        router.push("/barber/dashboard")
+      } else {
+        router.push("/user/dashboard")
+      }
+    }
+  }, [user, loading, router])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (isLogin) {
+      const success = await login(formData.email, formData.password)
+      if (success) {
+        // Redirect handled by useEffect
+      } else {
+        alert("Login failed")
+      }
+    } else {
+      const success = await signup(formData)
+      if (success) {
+        alert("Account created successfully! Please login.")
+        setIsLogin(true)
+      } else {
+        alert("Signup failed")
+      }
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center gradient-bg">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    )
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen gradient-bg">
+      {/* Hero Section */}
+      <div className="container mx-auto px-4 py-12">
+        <div className="text-center text-white mb-12">
+          <div className="flex items-center justify-center mb-6">
+            <Scissors className="w-12 h-12 mr-3" />
+            <h1 className="text-5xl font-bold">BookCut</h1>
+          </div>
+          <p className="text-xl mb-8 max-w-2xl mx-auto">
+            Find and book appointments with the best barbers in your area. Get the perfect cut, every time.
+          </p>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          {/* Features */}
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+            <div className="text-center">
+              <MapPin className="w-8 h-8 mx-auto mb-3" />
+              <h3 className="text-lg font-semibold mb-2">Find Nearby</h3>
+              <p className="text-sm opacity-90">Discover skilled barbers in your area</p>
+            </div>
+            <div className="text-center">
+              <Clock className="w-8 h-8 mx-auto mb-3" />
+              <h3 className="text-lg font-semibold mb-2">Easy Booking</h3>
+              <p className="text-sm opacity-90">Book appointments in just a few clicks</p>
+            </div>
+            <div className="text-center">
+              <Star className="w-8 h-8 mx-auto mb-3" />
+              <h3 className="text-lg font-semibold mb-2">Quality Service</h3>
+              <p className="text-sm opacity-90">Rated barbers with proven expertise</p>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Auth Form */}
+        <div className="max-w-md mx-auto">
+          <Card className="card-gradient">
+            <CardHeader>
+              <CardTitle className="text-center text-2xl text-[#2C3E50]">
+                {isLogin ? "Welcome Back" : "Join BookCut"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {!isLogin && (
+                  <>
+                    <div>
+                      <Label htmlFor="name">Full Name</Label>
+                      <Input
+                        id="name"
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        required
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        required
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label>Account Type</Label>
+                      <Tabs
+                        value={formData.userType}
+                        onValueChange={(value) => setFormData({ ...formData, userType: value })}
+                        className="mt-1"
+                      >
+                        <TabsList className="grid w-full grid-cols-2">
+                          <TabsTrigger value="user">Customer</TabsTrigger>
+                          <TabsTrigger value="barber">Barber</TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                    </div>
+                  </>
+                )}
+
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    required
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                    className="mt-1"
+                  />
+                </div>
+
+                <Button type="submit" className="w-full btn-primary">
+                  {isLogin ? "Sign In" : "Create Account"}
+                </Button>
+              </form>
+
+              <div className="text-center mt-4">
+                <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-[#FF6B35] hover:underline">
+                  {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
-  );
+  )
 }

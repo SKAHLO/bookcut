@@ -24,21 +24,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem("token")
-    if (token) {
-      // Decode token and set user
+    // Check for existing token on mount
+    const initAuth = () => {
       try {
-        const payload = JSON.parse(atob(token.split(".")[1]))
+        const token = localStorage.getItem("token")
         const userData = localStorage.getItem("user")
-        if (userData) {
-          setUser(JSON.parse(userData))
+
+        if (token && userData) {
+          // Verify token is not expired
+          const payload = JSON.parse(atob(token.split(".")[1]))
+          const currentTime = Date.now() / 1000
+
+          if (payload.exp > currentTime) {
+            setUser(JSON.parse(userData))
+          } else {
+            // Token expired, clear storage
+            localStorage.removeItem("token")
+            localStorage.removeItem("user")
+          }
         }
       } catch (error) {
+        console.error("Error initializing auth:", error)
+        // Clear invalid data
         localStorage.removeItem("token")
         localStorage.removeItem("user")
+      } finally {
+        setLoading(false)
       }
     }
-    setLoading(false)
+
+    initAuth()
   }, [])
 
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -55,9 +70,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem("user", JSON.stringify(data.user))
         setUser(data.user)
         return true
+      } else {
+        const errorData = await response.json()
+        console.error("Login error:", errorData.error)
+        return false
       }
-      return false
     } catch (error) {
+      console.error("Login error:", error)
       return false
     }
   }
@@ -70,8 +89,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(userData),
       })
 
-      return response.ok
+      if (response.ok) {
+        return true
+      } else {
+        const errorData = await response.json()
+        console.error("Signup error:", errorData.error)
+        return false
+      }
     } catch (error) {
+      console.error("Signup error:", error)
       return false
     }
   }
