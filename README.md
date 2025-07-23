@@ -2,13 +2,16 @@ This is a Next.Js app that allows users to book appointments with their barbers 
 ## Getting Started
 
 # Install all required packages
-npm install
-npm install bcryptjs jsonwebtoken mongodb
-npm install @radix-ui/react-switch @radix-ui/react-tabs
+
 
 First, run the development server:
 
 ```bash
+Download and install Node.js
+Install the following extensions in vscode: Javascript, html, CSS.
+npm install
+npm install bcryptjs jsonwebtoken mongodb
+npm install @radix-ui/react-switch @radix-ui/react-tabs
 npm run dev
 # or
 yarn dev
