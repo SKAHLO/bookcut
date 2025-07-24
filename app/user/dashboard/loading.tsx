@@ -1,3 +1,5 @@
-export default function Loading() {
-  return null
+import Loading from "@/components/loading"
+
+export default function UserDashboardLoading() {
+  return <Loading />
 }

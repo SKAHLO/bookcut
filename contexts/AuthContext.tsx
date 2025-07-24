@@ -13,6 +13,7 @@ interface AuthContextType {
   user: User | null
   login: (email: string, password: string) => Promise<boolean>
   signup: (userData: any) => Promise<boolean>
+  googleSignIn: (credential: string, userType: "user" | "barber") => Promise<boolean>
   logout: () => void
   loading: boolean
 }
@@ -24,28 +25,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check for existing token on mount
     const initAuth = () => {
       try {
         const token = localStorage.getItem("token")
         const userData = localStorage.getItem("user")
 
         if (token && userData) {
-          // Verify token is not expired
           const payload = JSON.parse(atob(token.split(".")[1]))
           const currentTime = Date.now() / 1000
 
           if (payload.exp > currentTime) {
             setUser(JSON.parse(userData))
           } else {
-            // Token expired, clear storage
             localStorage.removeItem("token")
             localStorage.removeItem("user")
           }
         }
       } catch (error) {
         console.error("Error initializing auth:", error)
-        // Clear invalid data
         localStorage.removeItem("token")
         localStorage.removeItem("user")
       } finally {
@@ -58,21 +55,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log("Attempting login for:", email)
+
       const response = await fetch("/api/auth/signin", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ email, password }),
       })
 
+      console.log("Login response status:", response.status)
+
       if (response.ok) {
         const data = await response.json()
+        console.log("Login successful:", data.user.email)
+
         localStorage.setItem("token", data.token)
         localStorage.setItem("user", JSON.stringify(data.user))
         setUser(data.user)
         return true
       } else {
-        const errorData = await response.json()
-        console.error("Login error:", errorData.error)
+        const errorText = await response.text()
+        console.error("Login failed:", errorText)
+
+        try {
+          const errorData = JSON.parse(errorText)
+          console.error("Login error:", errorData.error)
+        } catch {
+          console.error("Login error (non-JSON):", errorText)
+        }
         return false
       }
     } catch (error) {
@@ -83,21 +95,76 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (userData: any): Promise<boolean> => {
     try {
+      console.log("Attempting signup for:", userData.email)
+
       const response = await fetch("/api/auth/signup", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(userData),
       })
 
+      console.log("Signup response status:", response.status)
+
       if (response.ok) {
+        const data = await response.json()
+        console.log("Signup successful:", data.message)
         return true
       } else {
-        const errorData = await response.json()
-        console.error("Signup error:", errorData.error)
+        const errorText = await response.text()
+        console.error("Signup failed:", errorText)
+
+        try {
+          const errorData = JSON.parse(errorText)
+          console.error("Signup error:", errorData.error)
+        } catch {
+          console.error("Signup error (non-JSON):", errorText)
+        }
         return false
       }
     } catch (error) {
       console.error("Signup error:", error)
+      return false
+    }
+  }
+
+  const googleSignIn = async (credential: string, userType: "user" | "barber"): Promise<boolean> => {
+    try {
+      console.log("Attempting Google sign-in for:", userType)
+
+      const response = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ credential, userType }),
+      })
+
+      console.log("Google sign-in response status:", response.status)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log("Google sign-in successful:", data.user.email)
+
+        localStorage.setItem("token", data.token)
+        localStorage.setItem("user", JSON.stringify(data.user))
+        setUser(data.user)
+        return true
+      } else {
+        const errorText = await response.text()
+        console.error("Google sign-in failed:", errorText)
+
+        try {
+          const errorData = JSON.parse(errorText)
+          console.error("Google sign-in error:", errorData.error)
+        } catch {
+          console.error("Google sign-in error (non-JSON):", errorText)
+        }
+        return false
+      }
+    } catch (error) {
+      console.error("Google sign-in error:", error)
       return false
     }
   }
@@ -108,7 +175,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
-  return <AuthContext.Provider value={{ user, login, signup, logout, loading }}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={{ user, login, signup, googleSignIn, logout, loading }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth() {
