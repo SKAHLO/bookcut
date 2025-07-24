@@ -359,11 +359,19 @@ export default function HomePage() {
                             onValueChange={(value) => setFormData({ ...formData, userType: value })}
                             className="mt-1"
                           >
-                            <TabsList className="grid w-full grid-cols-2">
-                              <TabsTrigger value="user" disabled={isSubmitting}>
+                            <TabsList className="grid w-full grid-cols-2 bg-gray-100">
+                              <TabsTrigger 
+                                value="user" 
+                                disabled={isSubmitting}
+                                className="data-[state=active]:bg-[#FF6B35] data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
+                              >
                                 Customer
                               </TabsTrigger>
-                              <TabsTrigger value="barber" disabled={isSubmitting}>
+                              <TabsTrigger 
+                                value="barber" 
+                                disabled={isSubmitting}
+                                className="data-[state=active]:bg-[#FF6B35] data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
+                              >
                                 Barber
                               </TabsTrigger>
                             </TabsList>
