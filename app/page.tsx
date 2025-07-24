@@ -26,6 +26,11 @@ export default function HomePage() {
     location: { address: "", coordinates: [0, 0] },
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [showResetPassword, setShowResetPassword] = useState(false)
+  const [resetToken, setResetToken] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("")
 
   useEffect(() => {
     if (!loading && user) {
@@ -89,6 +94,70 @@ export default function HomePage() {
     alert("Google sign-in failed. Please try again.")
   }
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+
+    try {
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotPasswordEmail }),
+      })
+
+      const data = await response.json()
+      
+      if (response.ok) {
+        alert(data.message)
+        // For demo purposes, show the reset token (remove in production)
+        if (data.resetToken) {
+          setResetToken(data.resetToken)
+          setShowResetPassword(true)
+          setShowForgotPassword(false)
+        }
+      } else {
+        alert(data.error || "Failed to send reset email")
+      }
+    } catch (error) {
+      console.error("Forgot password error:", error)
+      alert("An error occurred. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+
+    try {
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: resetToken, password: newPassword }),
+      })
+
+      const data = await response.json()
+      
+      if (response.ok) {
+        alert("Password reset successfully! Please login with your new password.")
+        setShowResetPassword(false)
+        setShowForgotPassword(false)
+        setResetToken("")
+        setNewPassword("")
+        setForgotPasswordEmail("")
+        setIsLogin(true)
+      } else {
+        alert(data.error || "Failed to reset password")
+      }
+    } catch (error) {
+      console.error("Reset password error:", error)
+      alert("An error occurred. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   if (loading) {
     return <Loading />
   }
@@ -132,12 +201,102 @@ export default function HomePage() {
           <Card className="card-gradient">
             <CardHeader>
               <CardTitle className="text-center text-2xl text-[#2C3E50]">
-                {isLogin ? "Welcome Back" : "Join BookCut"}
+                {showForgotPassword ? "Reset Password" : showResetPassword ? "Set New Password" : isLogin ? "Welcome Back" : "Join BookCut"}
               </CardTitle>
             </CardHeader>
             <CardContent>
+              {/* Forgot Password Form */}
+              {showForgotPassword && (
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <div>
+                    <Label htmlFor="forgotEmail">Email Address</Label>
+                    <Input
+                      id="forgotEmail"
+                      type="email"
+                      value={forgotPasswordEmail}
+                      onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                      required
+                      className="mt-1"
+                      disabled={isSubmitting}
+                      placeholder="Enter your email address"
+                    />
+                  </div>
+
+                  <Button type="submit" className="w-full btn-primary" disabled={isSubmitting}>
+                    {isSubmitting ? "Sending..." : "Send Reset Link"}
+                  </Button>
+
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowForgotPassword(false)
+                        setForgotPasswordEmail("")
+                      }}
+                      className="text-[#FF6B35] hover:underline"
+                      disabled={isSubmitting}
+                    >
+                      Back to Sign In
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Reset Password Form */}
+              {showResetPassword && (
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <div>
+                    <Label htmlFor="resetToken">Reset Token</Label>
+                    <Input
+                      id="resetToken"
+                      type="text"
+                      value={resetToken}
+                      onChange={(e) => setResetToken(e.target.value)}
+                      required
+                      className="mt-1"
+                      disabled={isSubmitting}
+                      placeholder="Enter reset token"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="newPassword">New Password</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      className="mt-1"
+                      disabled={isSubmitting}
+                      placeholder="Enter new password"
+                      minLength={6}
+                    />
+                  </div>
+
+                  <Button type="submit" className="w-full btn-primary" disabled={isSubmitting}>
+                    {isSubmitting ? "Resetting..." : "Reset Password"}
+                  </Button>
+
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowResetPassword(false)
+                        setResetToken("")
+                        setNewPassword("")
+                      }}
+                      className="text-[#FF6B35] hover:underline"
+                      disabled={isSubmitting}
+                    >
+                      Back to Sign In
+                    </button>
+                  </div>
+                </form>
+              )}
+
               {/* Google Sign-In Buttons */}
-              {!isLogin && (
+              {!isLogin && !showForgotPassword && !showResetPassword && (
                 <div className="space-y-3 mb-6">
                   <GoogleSignInButton
                     userType="user"
@@ -164,94 +323,109 @@ export default function HomePage() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {!isLogin && (
-                  <>
+              {!showForgotPassword && !showResetPassword && (
+                <>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    {!isLogin && (
+                      <>
+                        <div>
+                          <Label htmlFor="name">Full Name</Label>
+                          <Input
+                            id="name"
+                            type="text"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            required
+                            className="mt-1"
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="phone">Phone Number</Label>
+                          <Input
+                            id="phone"
+                            type="tel"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            required
+                            className="mt-1"
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                        <div>
+                          <Label>Account Type</Label>
+                          <Tabs
+                            value={formData.userType}
+                            onValueChange={(value) => setFormData({ ...formData, userType: value })}
+                            className="mt-1"
+                          >
+                            <TabsList className="grid w-full grid-cols-2">
+                              <TabsTrigger value="user" disabled={isSubmitting}>
+                                Customer
+                              </TabsTrigger>
+                              <TabsTrigger value="barber" disabled={isSubmitting}>
+                                Barber
+                              </TabsTrigger>
+                            </TabsList>
+                          </Tabs>
+                        </div>
+                      </>
+                    )}
+
                     <div>
-                      <Label htmlFor="name">Full Name</Label>
+                      <Label htmlFor="email">Email</Label>
                       <Input
-                        id="name"
-                        type="text"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         required
                         className="mt-1"
                         disabled={isSubmitting}
                       />
                     </div>
+
                     <div>
-                      <Label htmlFor="phone">Phone Number</Label>
+                      <Label htmlFor="password">Password</Label>
                       <Input
-                        id="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        id="password"
+                        type="password"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         required
                         className="mt-1"
                         disabled={isSubmitting}
                       />
                     </div>
-                    <div>
-                      <Label>Account Type</Label>
-                      <Tabs
-                        value={formData.userType}
-                        onValueChange={(value) => setFormData({ ...formData, userType: value })}
-                        className="mt-1"
+
+                    <Button type="submit" className="w-full btn-primary" disabled={isSubmitting}>
+                      {isSubmitting ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
+                    </Button>
+                  </form>
+
+                  <div className="text-center mt-4 space-y-2">
+                    {isLogin && (
+                      <button
+                        type="button"
+                        onClick={() => setShowForgotPassword(true)}
+                        className="text-[#FF6B35] hover:underline block w-full"
+                        disabled={isSubmitting}
                       >
-                        <TabsList className="grid w-full grid-cols-2">
-                          <TabsTrigger value="user" disabled={isSubmitting}>
-                            Customer
-                          </TabsTrigger>
-                          <TabsTrigger value="barber" disabled={isSubmitting}>
-                            Barber
-                          </TabsTrigger>
-                        </TabsList>
-                      </Tabs>
-                    </div>
-                  </>
-                )}
-
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
-                    className="mt-1"
-                    disabled={isSubmitting}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
-                    className="mt-1"
-                    disabled={isSubmitting}
-                  />
-                </div>
-
-                <Button type="submit" className="w-full btn-primary" disabled={isSubmitting}>
-                  {isSubmitting ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
-                </Button>
-              </form>
-
-              <div className="text-center mt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsLogin(!isLogin)}
-                  className="text-[#FF6B35] hover:underline"
-                  disabled={isSubmitting}
-                >
-                  {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-                </button>
-              </div>
+                        Forgot Password?
+                      </button>
+                    )}
+                    
+                    <button
+                      type="button"
+                      onClick={() => setIsLogin(!isLogin)}
+                      className="text-[#FF6B35] hover:underline"
+                      disabled={isSubmitting}
+                    >
+                      {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+                    </button>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
