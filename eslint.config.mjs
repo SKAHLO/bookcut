@@ -1,9 +1,13 @@
-/** @type {import('eslint').Linter.Config} */
-const config = {
-  extends: ['next/core-web-vitals'],
-  rules: {
-    // Add any custom rules here
-  },
-}
+import { FlatCompat } from "@eslint/eslintrc";
 
-export default config
+const compat = new FlatCompat();
+
+/** @type {import('eslint').Linter.Config[]} */
+export default [
+  ...compat.extends('next/core-web-vitals'),
+  {
+    rules: {
+      // Add any custom rules here
+    },
+  },
+];

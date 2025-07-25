@@ -40,16 +40,16 @@ export default function UserDashboard() {
     }
   }, [user, router])
 
-  const searchBarbers = async (userLocation = null) => {
+  const searchBarbers = async (userLocation: [number, number] | null = null) => {
     setLoading(true)
     try {
-      let coordinates = userLocation
+      let coordinates: [number, number] | null = userLocation
 
       // Get user's current location if not provided
       if (!coordinates) {
         if (navigator.geolocation) {
           try {
-            const position = await new Promise((resolve, reject) => {
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
               navigator.geolocation.getCurrentPosition(resolve, reject, {
                 timeout: 10000,
                 enableHighAccuracy: true
