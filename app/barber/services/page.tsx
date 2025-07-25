@@ -114,14 +114,14 @@ export default function BarberServices() {
                 <CardHeader>
                   <CardTitle className="text-xl text-[#2C3E50] flex items-center justify-between">
                     {service.name}
-                    <Badge className="bg-[#FF6B35] text-white">${service.price}</Badge>
+                    <Badge className="bg-[#FF6B35] text-white">₦{service.price}</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-gray-600">
                       <DollarSign className="w-4 h-4" />
-                      <span className="font-medium">${service.price}</span>
+                      <span className="font-medium">₦{service.price}</span>
                     </div>
                     <div className="flex items-center gap-2 text-gray-600">
                       <Clock className="w-4 h-4" />
@@ -129,7 +129,7 @@ export default function BarberServices() {
                     </div>
                     <div className="pt-2">
                       <div className="text-sm text-gray-500">
-                        Rate: ${(service.price / (service.duration / 60)).toFixed(2)}/hour
+                        Rate: ₦{(service.price / (service.duration / 60)).toFixed(2)}/hour
                       </div>
                     </div>
                   </div>

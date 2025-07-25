@@ -154,7 +154,7 @@ export default function UserAppointments() {
                     </div>
 
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-[#2C3E50] mb-2">${appointment.price}</div>
+                      <div className="text-2xl font-bold text-[#2C3E50] mb-2">₦{appointment.price}</div>
                       <Badge className={`mb-3 ${getStatusColor(appointment.status)}`}>{appointment.status}</Badge>
 
                       <div className="space-y-2">

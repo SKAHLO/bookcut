@@ -157,7 +157,7 @@ export default function BarberDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Weekly Revenue</p>
-                  <p className="text-3xl font-bold text-[#2C3E50]">${stats.weeklyRevenue}</p>
+                  <p className="text-3xl font-bold text-[#2C3E50]">₦{stats.weeklyRevenue}</p>
                 </div>
                 <DollarSign className="w-8 h-8 text-[#4ECDC4]" />
               </div>

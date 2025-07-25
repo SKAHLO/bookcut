@@ -323,7 +323,7 @@ export default function BarberSettings() {
                 />
                 <Input
                   type="number"
-                  placeholder="Price ($)"
+                  placeholder="Price (₦)"
                   value={newService.price || ""}
                   onChange={(e) => setNewService({ ...newService, price: Number(e.target.value) })}
                 />
@@ -346,7 +346,7 @@ export default function BarberSettings() {
                     <div>
                       <h3 className="font-semibold text-[#2C3E50]">{service.name}</h3>
                       <p className="text-sm text-gray-600">
-                        ${service.price} • {service.duration} minutes
+                        ₦{service.price} • {service.duration} minutes
                       </p>
                     </div>
                     <Button

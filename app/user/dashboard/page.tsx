@@ -227,7 +227,7 @@ export default function UserDashboard() {
                     <div className="flex flex-wrap gap-2">
                       {barber.services.slice(0, 3).map((service, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
-                          {service.name} - ${service.price}
+                          {service.name} - ₦{service.price}
                         </Badge>
                       ))}
                       {barber.services.length > 3 && (

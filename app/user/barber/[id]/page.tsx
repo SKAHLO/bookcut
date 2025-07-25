@@ -351,7 +351,7 @@ export default function BarberDetail() {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="font-semibold text-[#2C3E50]">{service.name}</h3>
-                        <Badge className="bg-[#FF6B35] text-white">${service.price}</Badge>
+                        <Badge className="bg-[#FF6B35] text-white">₦{service.price}</Badge>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Clock className="w-4 h-4" />
@@ -398,8 +398,8 @@ export default function BarberDetail() {
                   <div className="p-4 bg-orange-50 border border-[#FF6B35] rounded-lg">
                     <h4 className="font-semibold text-[#2C3E50] mb-1">{selectedService.name}</h4>
                     <div className="flex justify-between text-sm text-gray-600">
-                      <span>{selectedService.duration} minutes</span>
-                      <span className="font-semibold">${selectedService.price}</span>
+                    <span>{selectedService.duration} minutes</span>
+                    <span className="font-semibold">₦{selectedService.price}</span>
                     </div>
                   </div>
                 ) : (
@@ -451,8 +451,8 @@ export default function BarberDetail() {
                 <div className="p-3 bg-orange-50 border border-[#FF6B35] rounded-lg">
                   <h4 className="font-semibold text-[#2C3E50] mb-1">{selectedService.name}</h4>
                   <div className="flex justify-between text-sm text-gray-600">
-                    <span>{selectedService.duration} minutes</span>
-                    <span className="font-semibold">${selectedService.price}</span>
+                  <span>{selectedService.duration} minutes</span>
+                  <span className="font-semibold">₦{selectedService.price}</span>
                   </div>
                 </div>
               )}
@@ -529,8 +529,8 @@ export default function BarberDetail() {
                       <span>{bookingData.time}</span>
                     </div>
                     <div className="flex justify-between font-semibold">
-                      <span>Total:</span>
-                      <span>${selectedService.price}</span>
+                    <span>Total:</span>
+                    <span>₦{selectedService.price}</span>
                     </div>
                   </div>
                 </div>
