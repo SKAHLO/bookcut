@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -44,16 +44,7 @@ export default function AppointmentDetail() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
 
-  useEffect(() => {
-    if (user?.userType !== "user") {
-      router.push("/")
-    } else {
-      loadAppointmentDetails()
-      loadMessages()
-    }
-  }, [user, router, appointmentId])
-
-  const loadAppointmentDetails = async () => {
+  const loadAppointmentDetails = useCallback(async () => {
     try {
       const token = localStorage.getItem('token')
       if (!token) return
@@ -73,9 +64,9 @@ export default function AppointmentDetail() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [appointmentId])
 
-  const loadMessages = async () => {
+  const loadMessages = useCallback(async () => {
     try {
       const token = localStorage.getItem('token')
       if (!token) return
@@ -93,7 +84,16 @@ export default function AppointmentDetail() {
     } catch (error) {
       console.error('Error loading messages:', error)
     }
-  }
+  }, [appointmentId])
+
+  useEffect(() => {
+    if (user?.userType !== "user") {
+      router.push("/")
+    } else {
+      loadAppointmentDetails()
+      loadMessages()
+    }
+  }, [user, router, appointmentId, loadAppointmentDetails, loadMessages])
 
   const sendMessage = async () => {
     if (!newMessage.trim()) return
@@ -261,14 +261,14 @@ export default function AppointmentDetail() {
                   {appointment.status === 'pending' && (
                     <div className="text-sm text-gray-500 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
                       <p className="font-medium mb-1">⏳ Waiting for confirmation</p>
-                      <p>Your appointment request has been sent to the barber. You'll be notified once they accept it.</p>
+                      <p>Your appointment request has been sent to the barber. You&apos;ll be notified once they accept it.</p>
                     </div>
                   )}
                   
                   {appointment.status === 'confirmed' && (
                     <div className="text-sm text-gray-500 bg-green-50 p-3 rounded-lg border border-green-200">
                       <p className="font-medium mb-1">✅ Appointment Confirmed</p>
-                      <p>Your appointment has been confirmed! Don't forget to arrive on time.</p>
+                      <p>Your appointment has been confirmed! Don&apos;t forget to arrive on time.</p>
                     </div>
                   )}
                   
