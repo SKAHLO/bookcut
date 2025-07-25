@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -48,9 +48,9 @@ export default function BarberAppointmentDetail() {
       loadAppointmentDetails()
       loadMessages()
     }
-  }, [user, router, appointmentId])
+  }, [user, router, appointmentId, loadAppointmentDetails, loadMessages])
 
-  const loadAppointmentDetails = async () => {
+  const loadAppointmentDetails = useCallback(async () => {
     try {
       const token = localStorage.getItem('token')
       if (!token) return
@@ -70,9 +70,9 @@ export default function BarberAppointmentDetail() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [appointmentId])
 
-  const loadMessages = async () => {
+  const loadMessages = useCallback(async () => {
     try {
       const token = localStorage.getItem('token')
       if (!token) return
@@ -90,7 +90,7 @@ export default function BarberAppointmentDetail() {
     } catch (error) {
       console.error('Error loading messages:', error)
     }
-  }
+  }, [appointmentId])
 
   const sendMessage = async () => {
     if (!newMessage.trim()) return

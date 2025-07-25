@@ -144,7 +144,7 @@ export default function BarberDashboard() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Today's Appointments</p>
+                  <p className="text-sm text-gray-600">Today&apos;s Appointments</p>
                   <p className="text-3xl font-bold text-[#2C3E50]">{stats.todayAppointments}</p>
                 </div>
                 <Calendar className="w-8 h-8 text-[#FF6B35]" />
@@ -194,7 +194,7 @@ export default function BarberDashboard() {
           <CardHeader>
             <CardTitle className="text-2xl text-[#2C3E50] flex items-center gap-2">
               <Clock className="w-6 h-6" />
-              Today's Appointments
+              Today&apos;s Appointments
             </CardTitle>
           </CardHeader>
           <CardContent>

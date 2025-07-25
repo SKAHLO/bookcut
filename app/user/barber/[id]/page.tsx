@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -61,15 +61,7 @@ export default function BarberDetail() {
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
   const [selectedDate, setSelectedDate] = useState("")
 
-  useEffect(() => {
-    if (user?.userType !== "user") {
-      router.push("/")
-    } else {
-      loadBarberDetails()
-    }
-  }, [user, router, barberId])
-
-  const loadBarberDetails = async () => {
+  const loadBarberDetails = useCallback(async () => {
     try {
       const response = await fetch(`/api/barbers/${barberId}`)
 
@@ -84,7 +76,15 @@ export default function BarberDetail() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [barberId])
+
+  useEffect(() => {
+    if (user?.userType !== "user") {
+      router.push("/")
+    } else {
+      loadBarberDetails()
+    }
+  }, [user, router, barberId, loadBarberDetails])
 
   const getDirections = () => {
     if (barber?.location?.address) {
