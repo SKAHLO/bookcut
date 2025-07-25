@@ -41,15 +41,6 @@ export default function BarberAppointmentDetail() {
   const [sending, setSending] = useState(false)
   const [updating, setUpdating] = useState(false)
 
-  useEffect(() => {
-    if (user?.userType !== "barber") {
-      router.push("/")
-    } else {
-      loadAppointmentDetails()
-      loadMessages()
-    }
-  }, [user, router, appointmentId, loadAppointmentDetails, loadMessages])
-
   const loadAppointmentDetails = useCallback(async () => {
     try {
       const token = localStorage.getItem('token')
@@ -91,6 +82,15 @@ export default function BarberAppointmentDetail() {
       console.error('Error loading messages:', error)
     }
   }, [appointmentId])
+
+  useEffect(() => {
+    if (user?.userType !== "barber") {
+      router.push("/")
+    } else {
+      loadAppointmentDetails()
+      loadMessages()
+    }
+  }, [user, router, appointmentId, loadAppointmentDetails, loadMessages])
 
   const sendMessage = async () => {
     if (!newMessage.trim()) return
