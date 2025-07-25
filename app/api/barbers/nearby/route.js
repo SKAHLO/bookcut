@@ -5,8 +5,17 @@ export async function POST(request) {
   try {
     const { coordinates, radius = 10 } = await request.json() // radius in km
 
+    console.log("Searching for barbers near:", coordinates, "within", radius, "km")
+
     const client = await clientPromise
     const db = client.db("bookcut")
+
+    // Check if there are any barbers with location data
+    const totalBarbers = await db.collection("barbers").countDocuments({ 
+      "location.coordinates": { $exists: true, $ne: [0, 0] },
+      isProfileComplete: true 
+    })
+    console.log("Total barbers with valid coordinates:", totalBarbers)
 
     // Find nearby barbers using MongoDB geospatial query
     const barbers = await db
@@ -21,6 +30,10 @@ export async function POST(request) {
             distanceField: "distance",
             maxDistance: radius * 1000, // convert km to meters
             spherical: true,
+            query: {
+              isProfileComplete: true,
+              "location.coordinates": { $exists: true, $ne: [0, 0] }
+            }
           },
         },
         {
@@ -29,11 +42,6 @@ export async function POST(request) {
             localField: "userId",
             foreignField: "_id",
             as: "user",
-          },
-        },
-        {
-          $match: {
-            isProfileComplete: true,
           },
         },
         {
@@ -52,8 +60,22 @@ export async function POST(request) {
       ])
       .toArray()
 
-    return NextResponse.json({ barbers })
+    console.log("Found", barbers.length, "nearby barbers")
+
+    return NextResponse.json({ 
+      barbers,
+      searchInfo: {
+        coordinates,
+        radius,
+        totalBarbers,
+        found: barbers.length
+      }
+    })
   } catch (error) {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Nearby barbers search error:", error)
+    return NextResponse.json({ 
+      error: "Internal server error", 
+      details: error.message 
+    }, { status: 500 })
   }
 }

@@ -109,12 +109,7 @@ export default function HomePage() {
       
       if (response.ok) {
         alert(data.message)
-        // For demo purposes, show the reset token (remove in production)
-        if (data.resetToken) {
-          setResetToken(data.resetToken)
-          setShowResetPassword(true)
-          setShowForgotPassword(false)
-        }
+        setShowForgotPassword(false)
       } else {
         alert(data.error || "Failed to send reset email")
       }

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, Star, Search } from "lucide-react"
+import { MapPin, Star, Search, Navigation } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 interface Barber {
@@ -40,25 +40,78 @@ export default function UserDashboard() {
     }
   }, [user, router])
 
-  const searchBarbers = async () => {
+  const searchBarbers = async (userLocation = null) => {
     setLoading(true)
     try {
-      // For demo, using mock coordinates
+      let coordinates = userLocation
+
+      // Get user's current location if not provided
+      if (!coordinates) {
+        if (navigator.geolocation) {
+          try {
+            const position = await new Promise((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, {
+                timeout: 10000,
+                enableHighAccuracy: true
+              })
+            })
+            coordinates = [position.coords.longitude, position.coords.latitude]
+            console.log("User location:", coordinates)
+          } catch (geoError) {
+            console.error("Geolocation error:", geoError)
+            alert("Could not get your location. Using default location for search.")
+            coordinates = [-74.006, 40.7128] // NYC coordinates as fallback
+          }
+        } else {
+          alert("Geolocation not supported. Using default location for search.")
+          coordinates = [-74.006, 40.7128] // NYC coordinates as fallback
+        }
+      }
+
+      console.log("Searching with coordinates:", coordinates)
+
+      const requestBody = {
+        coordinates,
+        radius: 25, // Increased radius to 25km
+      }
+
+      console.log("Request body:", requestBody)
+
       const response = await fetch("/api/barbers/nearby", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          coordinates: [-74.006, 40.7128], // NYC coordinates for demo
-          radius: 10,
-        }),
+        body: JSON.stringify(requestBody),
       })
+
+      console.log("Response status:", response.status)
+      console.log("Response headers:", Object.fromEntries(response.headers.entries()))
 
       if (response.ok) {
         const data = await response.json()
+        console.log("Search response:", data)
         setBarbers(data.barbers)
+        if (data.barbers.length === 0) {
+          const message = data.searchInfo 
+            ? `No barbers found within ${data.searchInfo.radius}km. Found ${data.searchInfo.totalBarbers} total barbers with valid locations.`
+            : "No barbers found in your area. Try expanding your search radius."
+          alert(message)
+        }
+      } else {
+        const responseText = await response.text()
+        console.error("Raw error response:", responseText)
+        
+        try {
+          const errorData = JSON.parse(responseText)
+          console.error("Parsed error:", errorData)
+          alert(`Search failed: ${errorData.error || 'Unknown error'}`)
+        } catch (parseError) {
+          console.error("Could not parse error response as JSON:", parseError)
+          alert(`Search failed with status ${response.status}. Check console for details.`)
+        }
       }
     } catch (error) {
-      console.error("Error fetching barbers:", error)
+      console.error("Network or other error:", error)
+      alert("Network error. Please check your connection and try again.")
     }
     setLoading(false)
   }
@@ -69,6 +122,13 @@ export default function UserDashboard() {
 
   const handleBarberClick = (barberId: string) => {
     router.push(`/user/barber/${barberId}`)
+  }
+
+  const getDirections = (address: string, e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent card click
+    const encodedAddress = encodeURIComponent(address)
+    const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`
+    window.open(googleMapsUrl, '_blank')
   }
 
   return (
@@ -87,6 +147,13 @@ export default function UserDashboard() {
               className="text-white border-white hover:bg-white hover:text-[#FF6B35]"
             >
               My Appointments
+            </Button>
+            <Button
+              onClick={() => router.push("/user/settings")}
+              variant="outline"
+              className="text-white border-white hover:bg-white hover:text-[#FF6B35]"
+            >
+              Settings
             </Button>
             <Button
               onClick={logout}
@@ -112,7 +179,7 @@ export default function UserDashboard() {
                   className="text-lg"
                 />
               </div>
-              <Button onClick={searchBarbers} className="btn-primary" disabled={loading}>
+              <Button onClick={() => searchBarbers()} className="btn-primary" disabled={loading}>
                 <Search className="w-5 h-5 mr-2" />
                 {loading ? "Searching..." : "Search"}
               </Button>
@@ -154,20 +221,32 @@ export default function UserDashboard() {
                   </Badge>
                 </div>
 
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-[#2C3E50]">Services:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {barber.services.slice(0, 3).map((service, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        {service.name} - ${service.price}
-                      </Badge>
-                    ))}
-                    {barber.services.length > 3 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{barber.services.length - 3} more
-                      </Badge>
-                    )}
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold text-[#2C3E50]">Services:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {barber.services.slice(0, 3).map((service, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {service.name} - ${service.price}
+                        </Badge>
+                      ))}
+                      {barber.services.length > 3 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{barber.services.length - 3} more
+                        </Badge>
+                      )}
+                    </div>
                   </div>
+                  
+                  <Button
+                    onClick={(e) => getDirections(barber.location.address, e)}
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-[#FF6B35] border-[#FF6B35] hover:bg-[#FF6B35] hover:text-white"
+                  >
+                    <Navigation className="w-4 h-4 mr-2" />
+                    Get Directions
+                  </Button>
                 </div>
               </CardContent>
             </Card>

@@ -35,36 +35,56 @@ export default function BarberDashboard() {
     }
   }, [user, router])
 
-  // Mock data for demo
+  // Load barber data
   useEffect(() => {
-    setAppointments([
-      {
-        _id: "1",
-        userId: "user1",
-        appointmentDate: "2024-01-20T10:00:00Z",
-        status: "confirmed",
-        service: "Haircut & Beard Trim",
-        customerName: "John Doe",
-        customerPhone: "+1234567890",
-      },
-      {
-        _id: "2",
-        userId: "user2",
-        appointmentDate: "2024-01-20T14:00:00Z",
-        status: "pending",
-        service: "Premium Haircut",
-        customerName: "Mike Smith",
-        customerPhone: "+1234567891",
-      },
-    ])
-
-    setStats({
-      todayAppointments: 5,
-      weeklyRevenue: 850,
-      totalCustomers: 127,
-      rating: 4.8,
-    })
+    loadAppointments()
+    loadStats()
   }, [])
+
+  const loadAppointments = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      const response = await fetch('/api/appointments/barber', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setAppointments(data.appointments || [])
+      }
+    } catch (error) {
+      console.error('Error loading appointments:', error)
+    }
+  }
+
+  const loadStats = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      const response = await fetch('/api/barbers/stats', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data.stats || {
+          todayAppointments: 0,
+          weeklyRevenue: 0,
+          totalCustomers: 0,
+          rating: 0,
+        })
+      }
+    } catch (error) {
+      console.error('Error loading stats:', error)
+    }
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -91,6 +111,13 @@ export default function BarberDashboard() {
             <p className="opacity-90">Manage your appointments and business</p>
           </div>
           <div className="flex gap-4">
+            <Button
+              onClick={() => router.push("/barber/services")}
+              variant="outline"
+              className="text-white border-white hover:bg-white hover:text-[#FF6B35]"
+            >
+              My Services
+            </Button>
             <Button
               onClick={() => router.push("/barber/settings")}
               variant="outline"
@@ -175,7 +202,8 @@ export default function BarberDashboard() {
               {appointments.map((appointment) => (
                 <div
                   key={appointment._id}
-                  className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm border"
+                  className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => router.push(`/barber/appointments/${appointment._id}`)}
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-gradient-to-br from-[#FF6B35] to-[#4ECDC4] rounded-full flex items-center justify-center text-white font-bold">

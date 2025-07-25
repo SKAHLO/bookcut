@@ -47,12 +47,56 @@ export default function BarberSettings() {
     } as WorkingHours,
   })
   const [newService, setNewService] = useState({ name: "", price: 0, duration: 30 })
+  const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
 
   useEffect(() => {
     if (user?.userType !== "barber") {
       router.push("/")
+    } else {
+      loadProfile()
     }
   }, [user, router])
+
+  const loadProfile = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      const response = await fetch('/api/barbers/profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.barber) {
+          setProfile({
+            businessName: data.barber.businessName || "",
+            description: data.barber.description || "",
+            profileImage: data.barber.profileImage || "",
+            location: data.barber.location || { address: "", coordinates: [0, 0] },
+            contactInfo: data.barber.contactInfo || { phone: "", email: "" },
+            services: data.barber.services || [],
+            workingHours: data.barber.workingHours || {
+              monday: { start: "09:00", end: "18:00", closed: false },
+              tuesday: { start: "09:00", end: "18:00", closed: false },
+              wednesday: { start: "09:00", end: "18:00", closed: false },
+              thursday: { start: "09:00", end: "18:00", closed: false },
+              friday: { start: "09:00", end: "18:00", closed: false },
+              saturday: { start: "09:00", end: "18:00", closed: false },
+              sunday: { start: "09:00", end: "18:00", closed: true },
+            },
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error)
+    } finally {
+      setInitialLoading(false)
+    }
+  }
 
   const addService = () => {
     if (newService.name && newService.price > 0) {
@@ -85,15 +129,89 @@ export default function BarberSettings() {
   }
 
   const saveProfile = async () => {
+    setLoading(true)
     try {
-      // API call to save profile would go here
-      alert("Profile saved successfully!")
+      const token = localStorage.getItem('token')
+      if (!token) {
+        alert("Please login again")
+        return
+      }
+
+      // Validate required fields
+      if (!profile.businessName || !profile.description || !profile.location.address) {
+        alert("Please fill in all required fields (Business Name, Description, Address)")
+        setLoading(false)
+        return
+      }
+
+      const response = await fetch('/api/barbers/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(profile),
+      })
+
+      if (response.ok) {
+        alert("Profile saved successfully!")
+      } else {
+        const errorData = await response.json()
+        alert(`Error saving profile: ${errorData.error}`)
+      }
     } catch (error) {
+      console.error('Error saving profile:', error)
       alert("Error saving profile")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const geocodeAddress = async () => {
+    if (!profile.location.address.trim()) {
+      alert("Please enter an address first")
+      return
+    }
+
+    try {
+      // Use a simple geocoding approach - in production, you'd use Google Geocoding API
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(profile.location.address)}&limit=1`)
+      const data = await response.json()
+      
+      if (data && data.length > 0) {
+        const lat = parseFloat(data[0].lat)
+        const lon = parseFloat(data[0].lon)
+        
+        setProfile({
+          ...profile,
+          location: {
+            ...profile.location,
+            coordinates: [lon, lat] // MongoDB expects [longitude, latitude]
+          }
+        })
+        
+        alert("Coordinates updated! Please save your profile.")
+      } else {
+        alert("Could not find coordinates for this address. Please check the address and try again.")
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error)
+      alert("Error getting coordinates. Please try again.")
     }
   }
 
   const days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#FF6B35] mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -176,7 +294,13 @@ export default function BarberSettings() {
                     placeholder="123 Main St, City, State 12345"
                     className="flex-1"
                   />
-                  <Button variant="outline" size="icon">
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={geocodeAddress}
+                    type="button"
+                    title="Get coordinates for this address"
+                  >
                     <MapPin className="w-4 h-4" />
                   </Button>
                 </div>
@@ -279,8 +403,12 @@ export default function BarberSettings() {
 
           {/* Save Button */}
           <div className="flex justify-end">
-            <Button onClick={saveProfile} className="btn-primary text-lg px-8 py-3">
-              Save Profile
+            <Button 
+              onClick={saveProfile} 
+              disabled={loading}
+              className="btn-primary text-lg px-8 py-3"
+            >
+              {loading ? "Saving..." : "Save Profile"}
             </Button>
           </div>
         </div>

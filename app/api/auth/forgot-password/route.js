@@ -40,9 +40,7 @@ export async function POST(request) {
     console.log(`Password reset token for ${email}: ${resetToken}`)
 
     return NextResponse.json({ 
-      message: "If an account with that email exists, we've sent a password reset link.",
-      // Remove this in production - only for testing
-      resetToken 
+      message: "If an account with that email exists, we've sent a password reset link."
     })
   } catch (error) {
     console.error("Forgot password error:", error)

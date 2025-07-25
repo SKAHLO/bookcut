@@ -32,35 +32,30 @@ export default function UserAppointments() {
     }
   }, [user, router])
 
-  // Mock data for demo
+  // Load user appointments
   useEffect(() => {
-    setAppointments([
-      {
-        _id: "1",
-        barberId: "barber1",
-        barberName: "Mike Johnson",
-        businessName: "Mike's Classic Cuts",
-        service: "Haircut & Beard Trim",
-        appointmentDate: "2024-01-22T14:00:00Z",
-        status: "confirmed",
-        location: "123 Main St, Downtown",
-        phone: "+1 (555) 123-4567",
-        price: 45,
-      },
-      {
-        _id: "2",
-        barberId: "barber2",
-        barberName: "Sarah Wilson",
-        businessName: "Sarah's Style Studio",
-        service: "Premium Haircut",
-        appointmentDate: "2024-01-25T10:30:00Z",
-        status: "pending",
-        location: "456 Oak Ave, Midtown",
-        phone: "+1 (555) 987-6543",
-        price: 60,
-      },
-    ])
+    loadAppointments()
   }, [])
+
+  const loadAppointments = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      const response = await fetch('/api/appointments/user', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setAppointments(data.appointments || [])
+      }
+    } catch (error) {
+      console.error('Error loading appointments:', error)
+    }
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -116,7 +111,11 @@ export default function UserAppointments() {
         ) : (
           <div className="space-y-6">
             {appointments.map((appointment) => (
-              <Card key={appointment._id} className="card-gradient">
+              <Card 
+                key={appointment._id} 
+                className="card-gradient hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => router.push(`/user/appointments/${appointment._id}`)}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">
