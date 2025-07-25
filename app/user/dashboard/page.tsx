@@ -89,8 +89,8 @@ export default function UserDashboard() {
       if (response.ok) {
         const data = await response.json()
         console.log("Search response:", data)
-        setBarbers(data.barbers)
-        if (data.barbers.length === 0) {
+        setBarbers(data.barbers || [])
+        if ((data.barbers || []).length === 0) {
           const message = data.searchInfo 
             ? `No barbers found within ${data.searchInfo.radius}km. Found ${data.searchInfo.totalBarbers} total barbers with valid locations.`
             : "No barbers found in your area. Try expanding your search radius."
