@@ -102,8 +102,8 @@ async function updateBarberRating(db, barberId) {
     const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0)
     const averageRating = totalRating / reviews.length
 
-    // Update barber's rating and review count
-    await db.collection('users').updateOne(
+    // Update barber's rating and review count in the barbers collection
+    await db.collection('barbers').updateOne(
       { _id: new ObjectId(barberId) },
       { 
         $set: { 
