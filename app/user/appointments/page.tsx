@@ -134,9 +134,38 @@ export default function UserAppointments() {
     }
   }
 
-  const cancelAppointment = (appointmentId: string) => {
-    // API call to cancel appointment would go here
-    setAppointments(appointments.map((apt) => (apt._id === appointmentId ? { ...apt, status: "cancelled" } : apt)))
+  const cancelAppointment = async (appointmentId: string) => {
+    if (!confirm("Are you sure you want to cancel this appointment?")) {
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      const response = await fetch(`/api/appointments/${appointmentId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'cancelled' })
+      })
+
+      if (response.ok) {
+        // Update local state
+        setAppointments(appointments.map((apt) => 
+          apt._id === appointmentId ? { ...apt, status: "cancelled" } : apt
+        ))
+        alert("Appointment cancelled successfully!")
+      } else {
+        const errorData = await response.json()
+        alert(`Error cancelling appointment: ${errorData.error}`)
+      }
+    } catch (error) {
+      console.error('Error cancelling appointment:', error)
+      alert("Error cancelling appointment")
+    }
   }
 
   return (

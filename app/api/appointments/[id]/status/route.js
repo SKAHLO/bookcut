@@ -35,32 +35,44 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: "Appointment not found" }, { status: 404 })
     }
 
-    // Check if user is the barber for this appointment
+    // Check if user is the barber for this appointment OR the customer cancelling their own appointment
     const barber = await db.collection("barbers").findOne({
       _id: appointment.barberId
     })
 
-    if (!barber || barber.userId.toString() !== userId) {
-      return NextResponse.json({ error: "Access denied. Only the barber can update appointment status." }, { status: 403 })
+    const isBarber = barber && barber.userId.toString() === userId
+    const isCustomer = appointment.userId.toString() === userId
+    const isCustomerCancelling = isCustomer && status === 'cancelled'
+
+    if (!isBarber && !isCustomerCancelling) {
+      return NextResponse.json({ 
+        error: "Access denied. Only the barber can update appointment status, or customers can cancel their own appointments." 
+      }, { status: 403 })
     }
 
     // Validate status transitions
     const currentStatus = appointment.status
     let isValidTransition = false
 
-    switch (currentStatus) {
-      case 'pending':
-        isValidTransition = ['confirmed', 'cancelled'].includes(status)
-        break
-      case 'confirmed':
-        isValidTransition = ['completed', 'cancelled'].includes(status)
-        break
-      case 'completed':
-      case 'cancelled':
-        isValidTransition = false // Final states
-        break
-      default:
-        isValidTransition = false
+    if (isCustomerCancelling) {
+      // Customers can cancel from pending or confirmed states
+      isValidTransition = ['pending', 'confirmed'].includes(currentStatus)
+    } else {
+      // Barber status transitions
+      switch (currentStatus) {
+        case 'pending':
+          isValidTransition = ['confirmed', 'cancelled'].includes(status)
+          break
+        case 'confirmed':
+          isValidTransition = ['completed', 'cancelled'].includes(status)
+          break
+        case 'completed':
+        case 'cancelled':
+          isValidTransition = false // Final states
+          break
+        default:
+          isValidTransition = false
+      }
     }
 
     if (!isValidTransition) {
