@@ -26,22 +26,15 @@ export async function GET(request) {
       return NextResponse.json({ error: "Barber profile not found" }, { status: 404 })
     }
 
-    // Get today's date range
-    const today = new Date()
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)
+    console.log('Barber ID:', barber._id)
 
-    // Get barber appointments with customer details
+    // Get barber appointments with customer details (all upcoming appointments)
     const appointments = await db
       .collection("appointments")
       .aggregate([
         {
           $match: { 
-            barberId: barber._id,
-            appointmentDate: {
-              $gte: startOfDay,
-              $lt: endOfDay
-            }
+            barberId: barber._id
           }
         },
         {
@@ -64,7 +57,7 @@ export async function GET(request) {
           }
         },
         {
-          $sort: { appointmentDate: 1 }
+          $sort: { appointmentDate: -1 }
         }
       ])
       .toArray()
@@ -76,6 +69,7 @@ export async function GET(request) {
       appointmentDate: appointment.appointmentDate,
       status: appointment.status,
       service: appointment.service,
+      price: appointment.price,
       customerName: appointment.customer?.[0]?.name || "Unknown Customer",
       customerPhone: appointment.customer?.[0]?.phone || "Phone not available"
     }))

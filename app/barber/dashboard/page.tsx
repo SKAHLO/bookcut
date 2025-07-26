@@ -194,7 +194,7 @@ export default function BarberDashboard() {
           <CardHeader>
             <CardTitle className="text-2xl text-[#2C3E50] flex items-center gap-2">
               <Clock className="w-6 h-6" />
-              Today&apos;s Appointments
+              Upcoming Appointments
             </CardTitle>
           </CardHeader>
           <CardContent>
