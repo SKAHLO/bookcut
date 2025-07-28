@@ -13,6 +13,9 @@ interface GoogleSignInButtonProps {
 declare global {
   interface Window {
     google: any
+    googleCallbackDispatcher?: (credential: string) => void
+    pendingGoogleUserType?: "user" | "barber"
+    currentGoogleOnSuccess?: (credential: string, userType: "user" | "barber") => void
   }
 }
 
@@ -25,31 +28,59 @@ export default function GoogleSignInButton({
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false)
 
   useEffect(() => {
-    // Load Google Sign-In script
-    const script = document.createElement("script")
-    script.src = "https://accounts.google.com/gsi/client"
-    script.async = true
-    script.defer = true
-    script.onload = () => {
-      if (window.google) {
-        window.google.accounts.id.initialize({
-          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-          callback: (response: any) => {
-            console.log("GoogleSignInButton callback triggered for userType:", userType)
-            onSuccess(response.credential, userType)
-          },
-        })
-        setIsGoogleLoaded(true)
+    // Setup global callback dispatcher only once
+    if (!window.googleCallbackDispatcher) {
+      window.googleCallbackDispatcher = (credential: string) => {
+        console.log("=== Global Google callback dispatcher ===")
+        console.log("Pending userType:", window.pendingGoogleUserType)
+        
+        // This should be set by the button that was clicked
+        const currentUserType = window.pendingGoogleUserType || "user"
+        console.log("Using userType:", currentUserType)
+        
+        // Find and call the appropriate onSuccess function
+        // We'll store it temporarily when button is clicked
+        if (window.currentGoogleOnSuccess) {
+          window.currentGoogleOnSuccess(credential, currentUserType)
+        }
       }
     }
-    document.head.appendChild(script)
 
-    return () => {
-      document.head.removeChild(script)
+    // Load Google Sign-In script only once
+    const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]')
+    if (!existingScript) {
+      const script = document.createElement("script")
+      script.src = "https://accounts.google.com/gsi/client"
+      script.async = true
+      script.defer = true
+      script.onload = () => {
+        if (window.google) {
+          window.google.accounts.id.initialize({
+            client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+            callback: (response: any) => {
+              if (window.googleCallbackDispatcher) {
+                window.googleCallbackDispatcher(response.credential)
+              }
+            },
+          })
+          setIsGoogleLoaded(true)
+        }
+      }
+      document.head.appendChild(script)
+    } else if (window.google) {
+      // Script already loaded
+      setIsGoogleLoaded(true)
     }
-  }, [userType, onSuccess])
+  }, [])
 
   const handleGoogleSignIn = () => {
+    console.log("=== Button clicked ===")
+    console.log("Setting pending userType to:", userType)
+    
+    // Store the userType and callback for this button click
+    window.pendingGoogleUserType = userType
+    window.currentGoogleOnSuccess = onSuccess
+    
     if (window.google && isGoogleLoaded) {
       window.google.accounts.id.prompt()
     } else {

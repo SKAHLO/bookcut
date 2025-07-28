@@ -78,6 +78,12 @@ export default function HomePage() {
   }
 
   const handleGoogleSuccess = async (credential: string, userType: "user" | "barber") => {
+    console.log("=== handleGoogleSuccess called ===")
+    console.log("Received userType in handleGoogleSuccess:", userType)
+    console.log("typeof userType:", typeof userType)
+    console.log("userType === 'user':", userType === "user")
+    console.log("userType === 'barber':", userType === "barber")
+    
     setIsSubmitting(true)
     try {
       const success = await googleSignIn(credential, userType)
