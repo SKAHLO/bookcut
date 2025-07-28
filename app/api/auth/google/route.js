@@ -30,13 +30,18 @@ export async function POST(request) {
     const mongoClient = await clientPromise
     const db = mongoClient.db("bookcut")
 
-    // Check if user already exists
-    const user = await db.collection("users").findOne({
-      $or: [{ email }, { googleId }],
-    })
-
+    // First check if user already exists by email (for sign-in)
+    let user = await db.collection("users").findOne({ email })
+    
     if (user) {
-      // User exists, just sign them in
+      // User exists by email, update with Google ID if needed and sign them in
+      if (!user.googleId) {
+        await db.collection("users").updateOne(
+          { _id: user._id },
+          { $set: { googleId, profileImage: picture || user.profileImage || "" } }
+        )
+      }
+      
       const token = jwt.sign(
         { userId: user._id.toString(), userType: user.userType },
         process.env.JWT_SECRET || "fallback-secret",
@@ -52,7 +57,37 @@ export async function POST(request) {
           userType: user.userType,
         },
       })
-    } else {
+    }
+
+    // Check if user exists by Google ID only (shouldn't happen but just in case)
+    user = await db.collection("users").findOne({ googleId })
+    if (user) {
+      const token = jwt.sign(
+        { userId: user._id.toString(), userType: user.userType },
+        process.env.JWT_SECRET || "fallback-secret",
+        { expiresIn: "7d" },
+      )
+
+      return NextResponse.json({
+        token,
+        user: {
+          id: user._id.toString(),
+          email: user.email,
+          name: user.name,
+          userType: user.userType,
+        },
+      })
+    }
+
+    // User doesn't exist, check if userType is provided for new registration
+    if (!userType) {
+      return NextResponse.json({ 
+        error: "User not found. Please sign up first or specify user type." 
+      }, { status: 404 })
+    }
+
+    // Create new user only if userType is specified
+    {
       // Create new user
       const newUser = {
         email,

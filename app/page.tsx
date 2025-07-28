@@ -12,9 +12,10 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Scissors, MapPin, Clock, Star } from "lucide-react"
 import Loading from "@/components/loading"
 import GoogleSignInButton from "@/components/google-signin-button"
+import GoogleSignInLoginButton from "@/components/google-signin-login-button"
 
 export default function HomePage() {
-  const { user, login, signup, googleSignIn, loading } = useAuth()
+  const { user, login, signup, googleSignIn, googleSignInLogin, loading } = useAuth()
   const router = useRouter()
   const [isLogin, setIsLogin] = useState(true)
   const [formData, setFormData] = useState({
@@ -92,6 +93,23 @@ export default function HomePage() {
   const handleGoogleError = (error: any) => {
     console.error("Google sign-in error:", error)
     alert("Google sign-in failed. Please try again.")
+  }
+
+  const handleGoogleLoginSuccess = async (credential: string) => {
+    setIsSubmitting(true)
+    try {
+      const success = await googleSignInLogin(credential)
+      if (success) {
+        // Redirect handled by useEffect
+      } else {
+        // Error message handled by googleSignInLogin function
+      }
+    } catch (error) {
+      console.error("Google sign-in error:", error)
+      alert("Google sign-in failed. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -405,6 +423,27 @@ export default function HomePage() {
                       {isSubmitting ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
                     </Button>
                   </form>
+
+                  {/* Google Sign-In for Login */}
+                  {isLogin && (
+                    <div className="mt-4">
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t border-gray-300" />
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                          <span className="px-2 bg-white text-gray-500">Or</span>
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        <GoogleSignInLoginButton
+                          onSuccess={handleGoogleLoginSuccess}
+                          onError={handleGoogleError}
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   <div className="text-center mt-4 space-y-2">
                     {isLogin && (

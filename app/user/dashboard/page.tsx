@@ -24,14 +24,14 @@ interface Barber {
   }>
   rating: number
   reviewCount: number
-  distance: number
+  distance: number | null
 }
 
 export default function UserDashboard() {
   const { user, logout } = useAuth()
   const router = useRouter()
   const [barbers, setBarbers] = useState<Barber[]>([])
-  const [searchLocation, setSearchLocation] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -40,13 +40,22 @@ export default function UserDashboard() {
     }
   }, [user, router])
 
-  const searchBarbers = async (userLocation: [number, number] | null = null) => {
+  const searchBarbers = async (forceLocationSearch: boolean = false) => {
     setLoading(true)
     try {
-      let coordinates: [number, number] | null = userLocation
+      let requestBody: any = {}
 
-      // Get user's current location if not provided
-      if (!coordinates) {
+      // If there's a search query and not forcing location search, do address search
+      if (searchQuery.trim() && !forceLocationSearch) {
+        console.log("Performing address search for:", searchQuery.trim())
+        requestBody = {
+          searchQuery: searchQuery.trim()
+        }
+      } else {
+        // Otherwise, do location-based search
+        let coordinates: [number, number] | null = null
+
+        // Get user's current location
         if (navigator.geolocation) {
           try {
             const position = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -66,13 +75,13 @@ export default function UserDashboard() {
           alert("Geolocation not supported. Using default location for search.")
           coordinates = [-74.006, 40.7128] // NYC coordinates as fallback
         }
-      }
 
-      console.log("Searching with coordinates:", coordinates)
-
-      const requestBody = {
-        coordinates,
-        radius: 25, // Increased radius to 25km
+        console.log("Searching with coordinates:", coordinates)
+        
+        requestBody = {
+          coordinates,
+          radius: 25, // Increased radius to 25km
+        }
       }
 
       console.log("Request body:", requestBody)
@@ -84,16 +93,21 @@ export default function UserDashboard() {
       })
 
       console.log("Response status:", response.status)
-      console.log("Response headers:", Object.fromEntries(response.headers.entries()))
 
       if (response.ok) {
         const data = await response.json()
         console.log("Search response:", data)
         setBarbers(data.barbers || [])
+        
         if ((data.barbers || []).length === 0) {
-          const message = data.searchInfo 
-            ? `No barbers found within ${data.searchInfo.radius}km. Found ${data.searchInfo.totalBarbers} total barbers with valid locations.`
-            : "No barbers found in your area. Try expanding your search radius."
+          let message = ""
+          if (data.searchInfo?.searchType === "address") {
+            message = `No barbers found matching "${data.searchInfo.searchQuery}". Found ${data.searchInfo.totalBarbers} total barbers in database.`
+          } else {
+            message = data.searchInfo 
+              ? `No barbers found within ${data.searchInfo.radius}km. Found ${data.searchInfo.totalBarbers} total barbers with valid locations.`
+              : "No barbers found in your area. Try expanding your search radius."
+          }
           alert(message)
         }
       } else {
@@ -117,8 +131,11 @@ export default function UserDashboard() {
   }
 
   useEffect(() => {
-    searchBarbers()
-  }, [])
+    const performInitialSearch = async () => {
+      searchBarbers(true) // Force location search on initial load
+    }
+    performInitialSearch()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleBarberClick = (barberId: string) => {
     router.push(`/user/barber/${barberId}`)
@@ -170,19 +187,37 @@ export default function UserDashboard() {
         {/* Search Section */}
         <Card className="mb-8">
           <CardContent className="p-6">
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="Enter your location..."
-                  value={searchLocation}
-                  onChange={(e) => setSearchLocation(e.target.value)}
-                  className="text-lg"
-                />
+            <div className="space-y-4">
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Search by barber name, business name, or address..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="text-lg"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        searchBarbers()
+                      }
+                    }}
+                  />
+                </div>
+                <Button onClick={() => searchBarbers()} className="btn-primary" disabled={loading}>
+                  <Search className="w-5 h-5 mr-2" />
+                  {loading ? "Searching..." : "Search by Address"}
+                </Button>
               </div>
-              <Button onClick={() => searchBarbers()} className="btn-primary" disabled={loading}>
-                <Search className="w-5 h-5 mr-2" />
-                {loading ? "Searching..." : "Search"}
-              </Button>
+              <div className="flex justify-center">
+                <Button 
+                  onClick={() => searchBarbers(true)} 
+                  variant="outline" 
+                  className="text-[#FF6B35] border-[#FF6B35] hover:bg-[#FF6B35] hover:text-white"
+                  disabled={loading}
+                >
+                  <Navigation className="w-4 h-4 mr-2" />
+                  Search Near My Location
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -216,9 +251,11 @@ export default function UserDashboard() {
                 <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
                   <MapPin className="w-4 h-4" />
                   <span>{barber.location.address}</span>
-                  <Badge variant="secondary" className="ml-auto">
-                    {(barber.distance / 1000).toFixed(1)}km away
-                  </Badge>
+                  {barber.distance !== null && (
+                    <Badge variant="secondary" className="ml-auto">
+                      {(barber.distance / 1000).toFixed(1)}km away
+                    </Badge>
+                  )}
                 </div>
 
                 <div className="space-y-3">

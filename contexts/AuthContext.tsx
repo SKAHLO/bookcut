@@ -14,6 +14,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>
   signup: (userData: any) => Promise<boolean>
   googleSignIn: (credential: string, userType: "user" | "barber") => Promise<boolean>
+  googleSignInLogin: (credential: string) => Promise<boolean>
   logout: () => void
   loading: boolean
 }
@@ -169,6 +170,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const googleSignInLogin = async (credential: string): Promise<boolean> => {
+    try {
+      console.log("Attempting Google sign-in for existing user")
+
+      const response = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ credential }),
+      })
+
+      console.log("Google sign-in response status:", response.status)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log("Google sign-in successful:", data.user.email)
+
+        localStorage.setItem("token", data.token)
+        localStorage.setItem("user", JSON.stringify(data.user))
+        setUser(data.user)
+        return true
+      } else {
+        const errorText = await response.text()
+        console.error("Google sign-in failed:", errorText)
+
+        try {
+          const errorData = JSON.parse(errorText)
+          console.error("Google sign-in error:", errorData.error)
+          
+          // If user not found, show appropriate message
+          if (response.status === 404) {
+            alert("Account not found. Please sign up first or use email/password login.")
+          }
+        } catch {
+          console.error("Google sign-in error (non-JSON):", errorText)
+        }
+        return false
+      }
+    } catch (error) {
+      console.error("Google sign-in error:", error)
+      return false
+    }
+  }
+
   const logout = () => {
     localStorage.removeItem("token")
     localStorage.removeItem("user")
@@ -176,7 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, googleSignIn, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, signup, googleSignIn, googleSignInLogin, logout, loading }}>
       {children}
     </AuthContext.Provider>
   )

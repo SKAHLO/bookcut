@@ -3,76 +3,147 @@ import clientPromise from "@/lib/mongodb"
 
 export async function POST(request) {
   try {
-    const { coordinates, radius = 10 } = await request.json() // radius in km
+    const { coordinates, radius = 10, searchQuery } = await request.json() // radius in km
 
-    console.log("Searching for barbers near:", coordinates, "within", radius, "km")
+    console.log("Search parameters:", { coordinates, radius, searchQuery })
 
     const client = await clientPromise
     const db = client.db("bookcut")
 
-    // Check if there are any barbers with location data
-    const totalBarbers = await db.collection("barbers").countDocuments({ 
-      "location.coordinates": { $exists: true, $ne: [0, 0] },
-      isProfileComplete: true 
-    })
-    console.log("Total barbers with valid coordinates:", totalBarbers)
+    let barbers = []
+    let searchInfo = {}
 
-    // Find nearby barbers using MongoDB geospatial query
-    const barbers = await db
-      .collection("barbers")
-      .aggregate([
-        {
-          $geoNear: {
-            near: {
-              type: "Point",
-              coordinates: coordinates, // [longitude, latitude]
-            },
-            distanceField: "distance",
-            maxDistance: radius * 1000, // convert km to meters
-            spherical: true,
-            query: {
+    // If there's a search query (address search), perform text-based search
+    if (searchQuery && searchQuery.trim()) {
+      console.log("Performing address-based search for:", searchQuery)
+      
+      const totalBarbers = await db.collection("barbers").countDocuments({ 
+        isProfileComplete: true 
+      })
+      
+      barbers = await db
+        .collection("barbers")
+        .aggregate([
+          {
+            $match: {
               isProfileComplete: true,
-              "location.coordinates": { $exists: true, $ne: [0, 0] }
+              $or: [
+                { "location.address": { $regex: searchQuery.trim(), $options: "i" } },
+                { businessName: { $regex: searchQuery.trim(), $options: "i" } },
+                { description: { $regex: searchQuery.trim(), $options: "i" } }
+              ]
             }
           },
-        },
-        {
-          $lookup: {
-            from: "users",
-            localField: "userId",
-            foreignField: "_id",
-            as: "user",
+          {
+            $lookup: {
+              from: "users",
+              localField: "userId",
+              foreignField: "_id",
+              as: "user",
+            },
           },
-        },
-        {
-          $project: {
-            businessName: 1,
-            description: 1,
-            profileImage: 1,
-            location: 1,
-            services: 1,
-            rating: 1,
-            reviewCount: 1,
-            distance: 1,
-            "user.name": 1,
+          {
+            $addFields: {
+              distance: null // No distance calculation for address search
+            }
           },
-        },
-      ])
-      .toArray()
+          {
+            $project: {
+              businessName: 1,
+              description: 1,
+              profileImage: 1,
+              location: 1,
+              services: 1,
+              rating: 1,
+              reviewCount: 1,
+              distance: 1,
+              "user.name": 1,
+            },
+          },
+        ])
+        .toArray()
 
-    console.log("Found", barbers.length, "nearby barbers")
+      searchInfo = {
+        searchType: "address",
+        searchQuery,
+        totalBarbers,
+        found: barbers.length
+      }
+      
+      console.log("Found", barbers.length, "barbers matching address search")
+    } 
+    // Otherwise, perform location-based search (existing functionality)
+    else if (coordinates) {
+      console.log("Performing location-based search near:", coordinates, "within", radius, "km")
+      
+      const totalBarbers = await db.collection("barbers").countDocuments({ 
+        "location.coordinates": { $exists: true, $ne: [0, 0] },
+        isProfileComplete: true 
+      })
+      
+      barbers = await db
+        .collection("barbers")
+        .aggregate([
+          {
+            $geoNear: {
+              near: {
+                type: "Point",
+                coordinates: coordinates, // [longitude, latitude]
+              },
+              distanceField: "distance",
+              maxDistance: radius * 1000, // convert km to meters
+              spherical: true,
+              query: {
+                isProfileComplete: true,
+                "location.coordinates": { $exists: true, $ne: [0, 0] }
+              }
+            },
+          },
+          {
+            $lookup: {
+              from: "users",
+              localField: "userId",
+              foreignField: "_id",
+              as: "user",
+            },
+          },
+          {
+            $project: {
+              businessName: 1,
+              description: 1,
+              profileImage: 1,
+              location: 1,
+              services: 1,
+              rating: 1,
+              reviewCount: 1,
+              distance: 1,
+              "user.name": 1,
+            },
+          },
+        ])
+        .toArray()
 
-    return NextResponse.json({ 
-      barbers,
-      searchInfo: {
+      searchInfo = {
+        searchType: "location",
         coordinates,
         radius,
         totalBarbers,
         found: barbers.length
       }
+      
+      console.log("Found", barbers.length, "nearby barbers")
+    } else {
+      return NextResponse.json({ 
+        error: "Either coordinates or search query must be provided" 
+      }, { status: 400 })
+    }
+
+    return NextResponse.json({ 
+      barbers,
+      searchInfo
     })
   } catch (error) {
-    console.error("Nearby barbers search error:", error)
+    console.error("Barber search error:", error)
     return NextResponse.json({ 
       error: "Internal server error", 
       details: error.message 
