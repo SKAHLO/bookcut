@@ -34,72 +34,77 @@ export async function POST(request) {
     const mongoClient = await clientPromise
     const db = mongoClient.db("bookcut")
 
-    // First check if user already exists by email (for sign-in)
-    let user = await db.collection("users").findOne({ email })
-    
-    console.log("Found user by email:", email, "User data:", {
-      id: user?._id?.toString(),
-      email: user?.email,
-      userType: user?.userType,
-      hasGoogleId: !!user?.googleId
-    })
-    
-    if (user) {
-      // User exists by email, update with Google ID if needed and sign them in
-      if (!user.googleId) {
-        await db.collection("users").updateOne(
-          { _id: user._id },
-          { $set: { googleId, profileImage: picture || user.profileImage || "" } }
-        )
-      }
-      
-      console.log("Signing in existing user with userType:", user.userType)
-      
-      const token = jwt.sign(
-        { userId: user._id.toString(), userType: user.userType },
-        process.env.JWT_SECRET || "fallback-secret",
-        { expiresIn: "7d" },
-      )
-
-      const responseData = {
-        token,
-        user: {
-          id: user._id.toString(),
-          email: user.email,
-          name: user.name,
-          userType: user.userType,
-        },
-      }
-      
-      console.log("Returning user data:", responseData.user)
-
-      return NextResponse.json(responseData)
-    }
-
-    // Check if user exists by Google ID only (shouldn't happen but just in case)
-    user = await db.collection("users").findOne({ googleId })
-    if (user) {
-      const token = jwt.sign(
-        { userId: user._id.toString(), userType: user.userType },
-        process.env.JWT_SECRET || "fallback-secret",
-        { expiresIn: "7d" },
-      )
-
-      return NextResponse.json({
-        token,
-        user: {
-          id: user._id.toString(),
-          email: user.email,
-          name: user.name,
-          userType: user.userType,
-        },
-      })
-    }
-
-    // User doesn't exist, check if userType is provided for new registration
+    // Check both collections for existing users (for sign-in without userType)
     if (!userType) {
+      console.log("No userType provided, checking both collections for existing user")
+      
+      // Check users collection first
+      let existingUser = await db.collection("users").findOne({ 
+        $or: [{ email }, { googleId }] 
+      })
+      
+      if (existingUser) {
+        console.log("Found existing user in users collection")
+        // Update Google ID if needed
+        if (!existingUser.googleId) {
+          await db.collection("users").updateOne(
+            { _id: existingUser._id },
+            { $set: { googleId, profileImage: picture || existingUser.profileImage || "" } }
+          )
+        }
+        
+        const token = jwt.sign(
+          { userId: existingUser._id.toString(), userType: "user" },
+          process.env.JWT_SECRET || "fallback-secret",
+          { expiresIn: "7d" },
+        )
+
+        return NextResponse.json({
+          token,
+          user: {
+            id: existingUser._id.toString(),
+            email: existingUser.email,
+            name: existingUser.name,
+            userType: "user",
+          },
+        })
+      }
+
+      // Check barbers collection
+      let existingBarber = await db.collection("barbers").findOne({ 
+        $or: [{ email }, { googleId }] 
+      })
+      
+      if (existingBarber) {
+        console.log("Found existing barber in barbers collection")
+        // Update Google ID if needed
+        if (!existingBarber.googleId) {
+          await db.collection("barbers").updateOne(
+            { _id: existingBarber._id },
+            { $set: { googleId, profileImage: picture || existingBarber.profileImage || "" } }
+          )
+        }
+        
+        const token = jwt.sign(
+          { userId: existingBarber._id.toString(), userType: "barber" },
+          process.env.JWT_SECRET || "fallback-secret",
+          { expiresIn: "7d" },
+        )
+
+        return NextResponse.json({
+          token,
+          user: {
+            id: existingBarber._id.toString(),
+            email: existingBarber.email,
+            name: existingBarber.name,
+            userType: "barber",
+          },
+        })
+      }
+
+      // User not found in either collection
       return NextResponse.json({ 
-        error: "User not found. Please sign up first or specify user type." 
+        error: "User not found. Please sign up first." 
       }, { status: 404 })
     }
 
@@ -111,42 +116,69 @@ export async function POST(request) {
       }, { status: 400 })
     }
 
-    console.log("Creating new user with userType:", userType)
-    console.log("userType strict equality check - is 'user':", userType === "user")
-    console.log("userType strict equality check - is 'barber':", userType === "barber")
-    
-    // Create new user
-    const newUser = {
-      email,
-      name,
-      phone: "", // Will be filled later if needed
-      userType: userType, // Remove the fallback, use exact userType
-      googleId,
-      profileImage: picture || "",
-      location: { address: "", coordinates: [0, 0] },
-      createdAt: new Date(),
-      password: await bcrypt.hash(googleId, 12), // Use googleId as password hash
+    console.log("Creating new account with userType:", userType)
+
+    // Check if email already exists in the appropriate collection
+    let existingAccount
+    if (userType === "user") {
+      existingAccount = await db.collection("users").findOne({ 
+        $or: [{ email }, { googleId }] 
+      })
+    } else {
+      existingAccount = await db.collection("barbers").findOne({ 
+        $or: [{ email }, { googleId }] 
+      })
     }
 
-    console.log("New user object before insertion:", { 
-      email: newUser.email, 
-      userType: newUser.userType, 
-      hasGoogleId: !!newUser.googleId 
-    })
+    if (existingAccount) {
+      return NextResponse.json({ 
+        error: "Account already exists with this email." 
+      }, { status: 400 })
+    }
 
-    const result = await db.collection("users").insertOne(newUser)
-    console.log("User inserted with ID:", result.insertedId.toString())
+    let result, responseData
 
-    // Only create barber profile if userType is exactly "barber"
-    console.log("About to check barber profile creation...")
-    console.log("userType value:", userType)
-    console.log("typeof userType:", typeof userType)
-    console.log("userType === 'barber':", userType === "barber")
-    
-    if (userType === "barber") {
-      console.log("✓ Creating barber profile for userType 'barber'")
-      const barberProfile = {
-        userId: result.insertedId,
+    if (userType === "user") {
+      console.log("Creating new user in users collection")
+      
+      const newUser = {
+        email,
+        name,
+        phone: "",
+        googleId,
+        profileImage: picture || "",
+        location: { address: "", coordinates: [0, 0] },
+        createdAt: new Date(),
+        password: await bcrypt.hash(googleId, 12),
+      }
+
+      result = await db.collection("users").insertOne(newUser)
+      console.log("User created with ID:", result.insertedId.toString())
+
+      const token = jwt.sign(
+        { userId: result.insertedId.toString(), userType: "user" },
+        process.env.JWT_SECRET || "fallback-secret",
+        { expiresIn: "7d" },
+      )
+
+      responseData = {
+        token,
+        user: {
+          id: result.insertedId.toString(),
+          email,
+          name,
+          userType: "user",
+        },
+      }
+
+    } else {
+      console.log("Creating new barber in barbers collection")
+      
+      const newBarber = {
+        email,
+        name,
+        phone: "",
+        googleId,
         businessName: "",
         description: "",
         profileImage: picture || "",
@@ -167,28 +199,27 @@ export async function POST(request) {
         reviewCount: 0,
         isProfileComplete: false,
         createdAt: new Date(),
+        password: await bcrypt.hash(googleId, 12),
       }
 
-      const barberResult = await db.collection("barbers").insertOne(barberProfile)
-      console.log("Barber profile created with ID:", barberResult.insertedId.toString())
-    } else {
-      console.log("✓ Skipping barber profile creation for userType:", userType)
-    }
+      result = await db.collection("barbers").insertOne(newBarber)
+      console.log("Barber created with ID:", result.insertedId.toString())
 
-    const token = jwt.sign(
-      { userId: result.insertedId.toString(), userType: userType },
-      process.env.JWT_SECRET || "fallback-secret",
-      { expiresIn: "7d" },
-    )
+      const token = jwt.sign(
+        { userId: result.insertedId.toString(), userType: "barber" },
+        process.env.JWT_SECRET || "fallback-secret",
+        { expiresIn: "7d" },
+      )
 
-    const responseData = {
-      token,
-      user: {
-        id: result.insertedId.toString(),
-        email,
-        name,
-        userType: userType,
-      },
+      responseData = {
+        token,
+        user: {
+          id: result.insertedId.toString(),
+          email,
+          name,
+          userType: "barber",
+        },
+      }
     }
 
     console.log("Final response user data:", responseData.user)
