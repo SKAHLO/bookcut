@@ -191,7 +191,7 @@ export default function UserDashboard() {
               <div className="flex gap-4">
                 <div className="flex-1">
                   <Input
-                    placeholder="Search by barber name, business name, or address..."
+                    placeholder="Search by name, business, address, area, or services..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="text-lg"
