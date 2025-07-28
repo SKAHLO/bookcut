@@ -191,17 +191,17 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen gradient-bg">
-      <div className="container mx-auto px-4 py-12">
-        <div className="text-center text-white mb-12">
-          <div className="flex items-center justify-center mb-6">
-            <Scissors className="w-12 h-12 mr-3" />
-            <h1 className="text-5xl font-bold">BookCut</h1>
+      <div className="container mx-auto px-4 py-6 sm:py-12">
+        <div className="text-center text-white mb-8 sm:mb-12">
+          <div className="flex items-center justify-center mb-4 sm:mb-6">
+            <Scissors className="w-8 h-8 sm:w-12 sm:h-12 mr-2 sm:mr-3" />
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold">BookCut</h1>
           </div>
-          <p className="text-xl mb-8 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
             Find and book appointments with the best barbers in your area. Get the perfect cut, every time.
           </p>
 
-          <div className="grid md:grid-cols-3 gap-8 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 mb-8 sm:mb-12">
             <div className="text-center">
               <MapPin className="w-8 h-8 mx-auto mb-3" />
               <h3 className="text-lg font-semibold mb-2">Find Nearby</h3>
@@ -221,9 +221,9 @@ export default function HomePage() {
         </div>
 
         <div className="max-w-md mx-auto">
-          <Card className="card-gradient">
+          <Card className="card-gradient mx-4 sm:mx-0 card-touch">
             <CardHeader>
-              <CardTitle className="text-center text-2xl text-[#2C3E50]">
+              <CardTitle className="text-center text-xl sm:text-2xl text-[#2C3E50]">
                 {showForgotPassword ? "Reset Password" : showResetPassword ? "Set New Password" : isLogin ? "Welcome Back" : "Join BookCut"}
               </CardTitle>
             </CardHeader>
@@ -245,7 +245,7 @@ export default function HomePage() {
                     />
                   </div>
 
-                  <Button type="submit" className="w-full btn-primary" disabled={isSubmitting}>
+                  <Button type="submit" className="w-full btn-primary btn-touch" disabled={isSubmitting}>
                     {isSubmitting ? "Sending..." : "Send Reset Link"}
                   </Button>
 
@@ -297,7 +297,7 @@ export default function HomePage() {
                     />
                   </div>
 
-                  <Button type="submit" className="w-full btn-primary" disabled={isSubmitting}>
+                  <Button type="submit" className="w-full btn-primary btn-touch" disabled={isSubmitting}>
                     {isSubmitting ? "Resetting..." : "Reset Password"}
                   </Button>
 
@@ -429,7 +429,7 @@ export default function HomePage() {
                       />
                     </div>
 
-                    <Button type="submit" className="w-full btn-primary" disabled={isSubmitting}>
+                    <Button type="submit" className="w-full btn-primary btn-touch" disabled={isSubmitting}>
                       {isSubmitting ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
                     </Button>
                   </form>

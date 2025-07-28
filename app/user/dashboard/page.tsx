@@ -151,125 +151,195 @@ export default function UserDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="gradient-bg text-white p-6">
-        <div className="container mx-auto flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Welcome back, {user?.name}!</h1>
-            <p className="opacity-90">Find your perfect barber</p>
+      <div className="gradient-bg text-white p-4 sm:p-6">
+        <div className="container mx-auto">
+          {/* Mobile Layout */}
+          <div className="flex flex-col space-y-4 sm:hidden">
+            <div className="text-center">
+              <h1 className="text-xl font-bold">Welcome back, {user?.name}!</h1>
+              <p className="opacity-90 text-sm">Find your perfect barber</p>
+            </div>
+            <div className="flex flex-col space-y-2">
+              <Button
+                onClick={() => router.push("/user/appointments")}
+                variant="outline"
+                size="sm"
+                className="text-white border-white hover:bg-white hover:text-[#FF6B35]"
+              >
+                My Appointments
+              </Button>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={() => router.push("/user/settings")}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 text-white border-white hover:bg-white hover:text-[#FF6B35]"
+                >
+                  Settings
+                </Button>
+                <Button
+                  onClick={logout}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 text-white border-white hover:bg-white hover:text-[#FF6B35] bg-transparent"
+                >
+                  Logout
+                </Button>
+              </div>
+            </div>
           </div>
-          <div className="flex gap-4">
-            <Button
-              onClick={() => router.push("/user/appointments")}
-              variant="outline"
-              className="text-white border-white hover:bg-white hover:text-[#FF6B35]"
-            >
-              My Appointments
-            </Button>
-            <Button
-              onClick={() => router.push("/user/settings")}
-              variant="outline"
-              className="text-white border-white hover:bg-white hover:text-[#FF6B35]"
-            >
-              Settings
-            </Button>
-            <Button
-              onClick={logout}
-              variant="outline"
-              className="text-white border-white hover:bg-white hover:text-[#FF6B35] bg-transparent"
-            >
-              Logout
-            </Button>
+          
+          {/* Desktop Layout */}
+          <div className="hidden sm:flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold">Welcome back, {user?.name}!</h1>
+              <p className="opacity-90">Find your perfect barber</p>
+            </div>
+            <div className="flex gap-2 lg:gap-4">
+              <Button
+                onClick={() => router.push("/user/appointments")}
+                variant="outline"
+                className="text-white border-white hover:bg-white hover:text-[#FF6B35] text-sm lg:text-base"
+              >
+                My Appointments
+              </Button>
+              <Button
+                onClick={() => router.push("/user/settings")}
+                variant="outline"
+                className="text-white border-white hover:bg-white hover:text-[#FF6B35] text-sm lg:text-base"
+              >
+                Settings
+              </Button>
+              <Button
+                onClick={logout}
+                variant="outline"
+                className="text-white border-white hover:bg-white hover:text-[#FF6B35] bg-transparent text-sm lg:text-base"
+              >
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6 sm:py-8">
         {/* Search Section */}
-        <Card className="mb-8">
-          <CardContent className="p-6">
+        <Card className="mb-6 sm:mb-8 mx-2 sm:mx-0">
+          <CardContent className="p-4 sm:p-6">
             <div className="space-y-4">
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <Input
-                    placeholder="Search by name, business, address, area, or services..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="text-lg"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        searchBarbers()
-                      }
-                    }}
-                  />
-                </div>
-                <Button onClick={() => searchBarbers()} className="btn-primary" disabled={loading}>
-                  <Search className="w-5 h-5 mr-2" />
+              {/* Mobile Search Layout */}
+              <div className="flex flex-col space-y-3 sm:hidden">
+                <Input
+                  placeholder="Search by name, business, or area..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="text-base"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      searchBarbers()
+                    }
+                  }}
+                />
+                <Button onClick={() => searchBarbers()} className="btn-primary w-full" disabled={loading}>
+                  <Search className="w-4 h-4 mr-2" />
                   {loading ? "Searching..." : "Search by Address"}
                 </Button>
-              </div>
-              <div className="flex justify-center">
                 <Button 
                   onClick={() => searchBarbers(true)} 
                   variant="outline" 
-                  className="text-[#FF6B35] border-[#FF6B35] hover:bg-[#FF6B35] hover:text-white"
+                  className="text-[#FF6B35] border-[#FF6B35] hover:bg-[#FF6B35] hover:text-white w-full"
                   disabled={loading}
                 >
                   <Navigation className="w-4 h-4 mr-2" />
                   Search Near My Location
                 </Button>
               </div>
+              
+              {/* Desktop Search Layout */}
+              <div className="hidden sm:block">
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Search by name, business, address, area, or services..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="text-lg"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          searchBarbers()
+                        }
+                      }}
+                    />
+                  </div>
+                  <Button onClick={() => searchBarbers()} className="btn-primary" disabled={loading}>
+                    <Search className="w-5 h-5 mr-2" />
+                    {loading ? "Searching..." : "Search by Address"}
+                  </Button>
+                </div>
+                <div className="flex justify-center mt-4">
+                  <Button 
+                    onClick={() => searchBarbers(true)} 
+                    variant="outline" 
+                    className="text-[#FF6B35] border-[#FF6B35] hover:bg-[#FF6B35] hover:text-white"
+                    disabled={loading}
+                  >
+                    <Navigation className="w-4 h-4 mr-2" />
+                    Search Near My Location
+                  </Button>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Barbers Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 px-2 sm:px-0">
           {barbers.map((barber) => (
             <Card
               key={barber._id}
               className="card-gradient hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1"
               onClick={() => handleBarberClick(barber._id)}
             >
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-[#FF6B35] to-[#4ECDC4] rounded-full flex items-center justify-center text-white text-2xl font-bold">
+              <CardHeader className="pb-3 p-4 sm:p-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-[#FF6B35] to-[#4ECDC4] rounded-full flex items-center justify-center text-white text-lg sm:text-2xl font-bold">
                     {barber.businessName.charAt(0)}
                   </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-lg text-[#2C3E50]">{barber.businessName}</CardTitle>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base sm:text-lg text-[#2C3E50] truncate">{barber.businessName}</CardTitle>
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+                      <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400" />
                       <span>{barber.rating.toFixed(1)}</span>
                       <span>({barber.reviewCount} reviews)</span>
                     </div>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 mb-3 line-clamp-2">{barber.description}</p>
+              <CardContent className="p-4 sm:p-6 pt-0">
+                <p className="text-gray-600 mb-3 line-clamp-2 text-sm sm:text-base">{barber.description}</p>
 
-                <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
-                  <MapPin className="w-4 h-4" />
-                  <span>{barber.location.address}</span>
+                <div className="flex items-start gap-2 text-xs sm:text-sm text-gray-500 mb-3">
+                  <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mt-0.5 flex-shrink-0" />
+                  <span className="flex-1">{barber.location.address}</span>
                   {barber.distance !== null && (
-                    <Badge variant="secondary" className="ml-auto">
-                      {(barber.distance / 1000).toFixed(1)}km away
+                    <Badge variant="secondary" className="text-xs">
+                      {(barber.distance / 1000).toFixed(1)}km
                     </Badge>
                   )}
                 </div>
 
                 <div className="space-y-3">
                   <div>
-                    <p className="text-sm font-semibold text-[#2C3E50]">Services:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {barber.services.slice(0, 3).map((service, index) => (
+                    <p className="text-xs sm:text-sm font-semibold text-[#2C3E50]">Services:</p>
+                    <div className="flex flex-wrap gap-1 sm:gap-2">
+                      {barber.services.slice(0, 2).map((service, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
                           {service.name} - ₦{service.price}
                         </Badge>
                       ))}
-                      {barber.services.length > 3 && (
+                      {barber.services.length > 2 && (
                         <Badge variant="outline" className="text-xs">
-                          +{barber.services.length - 3} more
+                          +{barber.services.length - 2} more
                         </Badge>
                       )}
                     </div>
@@ -279,9 +349,9 @@ export default function UserDashboard() {
                     onClick={(e) => getDirections(barber.location.address, e)}
                     variant="outline"
                     size="sm"
-                    className="w-full text-[#FF6B35] border-[#FF6B35] hover:bg-[#FF6B35] hover:text-white"
+                    className="w-full text-[#FF6B35] border-[#FF6B35] hover:bg-[#FF6B35] hover:text-white text-xs sm:text-sm"
                   >
-                    <Navigation className="w-4 h-4 mr-2" />
+                    <Navigation className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                     Get Directions
                   </Button>
                 </div>
