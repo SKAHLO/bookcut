@@ -35,9 +35,13 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!loading && user) {
+      console.log("User authenticated, redirecting based on userType:", user.userType)
+      console.log("Full user object:", user)
       if (user.userType === "barber") {
+        console.log("Redirecting to barber dashboard")
         router.push("/barber/dashboard")
       } else {
+        console.log("Redirecting to user dashboard")
         router.push("/user/dashboard")
       }
     }

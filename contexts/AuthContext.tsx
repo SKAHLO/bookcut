@@ -31,13 +31,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const token = localStorage.getItem("token")
         const userData = localStorage.getItem("user")
 
+        console.log("Initializing auth, token exists:", !!token, "userData exists:", !!userData)
+
         if (token && userData) {
           const payload = JSON.parse(atob(token.split(".")[1]))
           const currentTime = Date.now() / 1000
+          const parsedUser = JSON.parse(userData)
+
+          console.log("Token payload:", payload)
+          console.log("Stored user data:", parsedUser)
+          console.log("User type from localStorage:", parsedUser.userType)
 
           if (payload.exp > currentTime) {
-            setUser(JSON.parse(userData))
+            setUser(parsedUser)
+            console.log("User set from localStorage:", parsedUser)
           } else {
+            console.log("Token expired, clearing storage")
             localStorage.removeItem("token")
             localStorage.removeItem("user")
           }
@@ -132,7 +141,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const googleSignIn = async (credential: string, userType: "user" | "barber"): Promise<boolean> => {
     try {
-      console.log("Attempting Google sign-in for:", userType)
+      console.log("Attempting Google sign-in for userType:", userType)
+      console.log("Sending to API:", { credential: credential.substring(0, 20) + "...", userType })
 
       const response = await fetch("/api/auth/google", {
         method: "POST",
@@ -187,10 +197,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json()
         console.log("Google sign-in successful:", data.user.email)
+        console.log("Received user data from API:", data.user)
+        console.log("User type from API:", data.user.userType)
 
         localStorage.setItem("token", data.token)
         localStorage.setItem("user", JSON.stringify(data.user))
         setUser(data.user)
+        console.log("Set user in context:", data.user)
         return true
       } else {
         const errorText = await response.text()

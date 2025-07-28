@@ -10,6 +10,10 @@ export async function POST(request) {
   try {
     const { credential, userType } = await request.json()
 
+    console.log("=== Google Auth API Called ===")
+    console.log("Received userType:", userType)
+    console.log("Has credential:", !!credential)
+
     if (!credential) {
       return NextResponse.json({ error: "No credential provided" }, { status: 400 })
     }
@@ -33,6 +37,13 @@ export async function POST(request) {
     // First check if user already exists by email (for sign-in)
     let user = await db.collection("users").findOne({ email })
     
+    console.log("Found user by email:", email, "User data:", {
+      id: user?._id?.toString(),
+      email: user?.email,
+      userType: user?.userType,
+      hasGoogleId: !!user?.googleId
+    })
+    
     if (user) {
       // User exists by email, update with Google ID if needed and sign them in
       if (!user.googleId) {
@@ -42,13 +53,15 @@ export async function POST(request) {
         )
       }
       
+      console.log("Signing in existing user with userType:", user.userType)
+      
       const token = jwt.sign(
         { userId: user._id.toString(), userType: user.userType },
         process.env.JWT_SECRET || "fallback-secret",
         { expiresIn: "7d" },
       )
 
-      return NextResponse.json({
+      const responseData = {
         token,
         user: {
           id: user._id.toString(),
@@ -56,7 +69,11 @@ export async function POST(request) {
           name: user.name,
           userType: user.userType,
         },
-      })
+      }
+      
+      console.log("Returning user data:", responseData.user)
+
+      return NextResponse.json(responseData)
     }
 
     // Check if user exists by Google ID only (shouldn't happen but just in case)
@@ -88,6 +105,8 @@ export async function POST(request) {
 
     // Create new user only if userType is specified
     {
+      console.log("Creating new user with userType:", userType)
+      
       // Create new user
       const newUser = {
         email,
@@ -101,10 +120,18 @@ export async function POST(request) {
         password: await bcrypt.hash(googleId, 12), // Use googleId as password hash
       }
 
+      console.log("New user object:", { 
+        email: newUser.email, 
+        userType: newUser.userType, 
+        hasGoogleId: !!newUser.googleId 
+      })
+
       const result = await db.collection("users").insertOne(newUser)
 
       // If barber, create barber profile
+      console.log("Checking if should create barber profile, userType:", userType)
       if (userType === "barber") {
+        console.log("Creating barber profile for user")
         const barberProfile = {
           userId: result.insertedId,
           businessName: "",
@@ -138,7 +165,7 @@ export async function POST(request) {
         { expiresIn: "7d" },
       )
 
-      return NextResponse.json({
+      const responseData = {
         token,
         user: {
           id: result.insertedId.toString(),
@@ -146,7 +173,11 @@ export async function POST(request) {
           name,
           userType: userType || "user",
         },
-      })
+      }
+
+      console.log("Returning new user data:", responseData.user)
+
+      return NextResponse.json(responseData)
     }
   } catch (error) {
     console.error("Google sign-in error:", error)
