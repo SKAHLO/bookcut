@@ -237,7 +237,7 @@ export default function UserAppointments() {
                         <h3 className="text-lg font-semibold text-[#2C3E50] mb-1 truncate">{appointment.businessName}</h3>
                         <p className="text-sm text-gray-600 mb-2 truncate">with {appointment.barberName}</p>
                         <div className="text-lg font-bold text-[#2C3E50] mb-2">₦{appointment.price}</div>
-                        <Badge className={getStatusColor(appointment.status)} size="sm">{appointment.status}</Badge>
+                        <Badge className={getStatusColor(appointment.status)}>{appointment.status}</Badge>
                       </div>
                     </div>
 

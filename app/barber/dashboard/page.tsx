@@ -262,7 +262,7 @@ export default function BarberDashboard() {
                         minute: "2-digit",
                       })}
                     </p>
-                    <Badge className={getStatusColor(appointment.status)} size="sm">{appointment.status}</Badge>
+                    <Badge className={getStatusColor(appointment.status)}>{appointment.status}</Badge>
                   </div>
                 </div>
               ))}
