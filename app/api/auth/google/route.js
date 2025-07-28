@@ -103,82 +103,98 @@ export async function POST(request) {
       }, { status: 404 })
     }
 
-    // Create new user only if userType is specified
-    {
-      console.log("Creating new user with userType:", userType)
-      
-      // Create new user
-      const newUser = {
+    // Validate userType - must be exactly "user" or "barber"
+    if (userType !== "user" && userType !== "barber") {
+      console.log("Invalid userType received:", userType)
+      return NextResponse.json({ 
+        error: "Invalid user type. Must be 'user' or 'barber'." 
+      }, { status: 400 })
+    }
+
+    console.log("Creating new user with userType:", userType)
+    console.log("userType strict equality check - is 'user':", userType === "user")
+    console.log("userType strict equality check - is 'barber':", userType === "barber")
+    
+    // Create new user
+    const newUser = {
+      email,
+      name,
+      phone: "", // Will be filled later if needed
+      userType: userType, // Remove the fallback, use exact userType
+      googleId,
+      profileImage: picture || "",
+      location: { address: "", coordinates: [0, 0] },
+      createdAt: new Date(),
+      password: await bcrypt.hash(googleId, 12), // Use googleId as password hash
+    }
+
+    console.log("New user object before insertion:", { 
+      email: newUser.email, 
+      userType: newUser.userType, 
+      hasGoogleId: !!newUser.googleId 
+    })
+
+    const result = await db.collection("users").insertOne(newUser)
+    console.log("User inserted with ID:", result.insertedId.toString())
+
+    // Only create barber profile if userType is exactly "barber"
+    console.log("About to check barber profile creation...")
+    console.log("userType value:", userType)
+    console.log("typeof userType:", typeof userType)
+    console.log("userType === 'barber':", userType === "barber")
+    
+    if (userType === "barber") {
+      console.log("✓ Creating barber profile for userType 'barber'")
+      const barberProfile = {
+        userId: result.insertedId,
+        businessName: "",
+        description: "",
+        profileImage: picture || "",
+        portfolioImages: [],
+        location: { address: "", coordinates: [0, 0] },
+        contactInfo: { phone: "", email },
+        services: [],
+        workingHours: {
+          monday: { start: "09:00", end: "18:00", closed: false },
+          tuesday: { start: "09:00", end: "18:00", closed: false },
+          wednesday: { start: "09:00", end: "18:00", closed: false },
+          thursday: { start: "09:00", end: "18:00", closed: false },
+          friday: { start: "09:00", end: "18:00", closed: false },
+          saturday: { start: "09:00", end: "18:00", closed: false },
+          sunday: { start: "09:00", end: "18:00", closed: true },
+        },
+        rating: 0,
+        reviewCount: 0,
+        isProfileComplete: false,
+        createdAt: new Date(),
+      }
+
+      const barberResult = await db.collection("barbers").insertOne(barberProfile)
+      console.log("Barber profile created with ID:", barberResult.insertedId.toString())
+    } else {
+      console.log("✓ Skipping barber profile creation for userType:", userType)
+    }
+
+    const token = jwt.sign(
+      { userId: result.insertedId.toString(), userType: userType },
+      process.env.JWT_SECRET || "fallback-secret",
+      { expiresIn: "7d" },
+    )
+
+    const responseData = {
+      token,
+      user: {
+        id: result.insertedId.toString(),
         email,
         name,
-        phone: "", // Will be filled later if needed
-        userType: userType || "user",
-        googleId,
-        profileImage: picture || "",
-        location: { address: "", coordinates: [0, 0] },
-        createdAt: new Date(),
-        password: await bcrypt.hash(googleId, 12), // Use googleId as password hash
-      }
-
-      console.log("New user object:", { 
-        email: newUser.email, 
-        userType: newUser.userType, 
-        hasGoogleId: !!newUser.googleId 
-      })
-
-      const result = await db.collection("users").insertOne(newUser)
-
-      // If barber, create barber profile
-      console.log("Checking if should create barber profile, userType:", userType)
-      if (userType === "barber") {
-        console.log("Creating barber profile for user")
-        const barberProfile = {
-          userId: result.insertedId,
-          businessName: "",
-          description: "",
-          profileImage: picture || "",
-          portfolioImages: [],
-          location: { address: "", coordinates: [0, 0] },
-          contactInfo: { phone: "", email },
-          services: [],
-          workingHours: {
-            monday: { start: "09:00", end: "18:00", closed: false },
-            tuesday: { start: "09:00", end: "18:00", closed: false },
-            wednesday: { start: "09:00", end: "18:00", closed: false },
-            thursday: { start: "09:00", end: "18:00", closed: false },
-            friday: { start: "09:00", end: "18:00", closed: false },
-            saturday: { start: "09:00", end: "18:00", closed: false },
-            sunday: { start: "09:00", end: "18:00", closed: true },
-          },
-          rating: 0,
-          reviewCount: 0,
-          isProfileComplete: false,
-          createdAt: new Date(),
-        }
-
-        await db.collection("barbers").insertOne(barberProfile)
-      }
-
-      const token = jwt.sign(
-        { userId: result.insertedId.toString(), userType: userType || "user" },
-        process.env.JWT_SECRET || "fallback-secret",
-        { expiresIn: "7d" },
-      )
-
-      const responseData = {
-        token,
-        user: {
-          id: result.insertedId.toString(),
-          email,
-          name,
-          userType: userType || "user",
-        },
-      }
-
-      console.log("Returning new user data:", responseData.user)
-
-      return NextResponse.json(responseData)
+        userType: userType,
+      },
     }
+
+    console.log("Final response user data:", responseData.user)
+    console.log("=== Google Auth API Complete ===")
+
+    return NextResponse.json(responseData)
   } catch (error) {
     console.error("Google sign-in error:", error)
     return NextResponse.json(
