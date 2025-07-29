@@ -15,6 +15,7 @@ interface Service {
   name: string
   price: number
   duration: number
+  images?: string[]
 }
 
 interface Barber {
@@ -60,6 +61,7 @@ export default function BarberDetail() {
   const [bookingLoading, setBookingLoading] = useState(false)
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
   const [selectedDate, setSelectedDate] = useState("")
+  const [showImageGallery, setShowImageGallery] = useState<{show: boolean, service: Service | null}>({show: false, service: null})
 
   const loadBarberDetails = useCallback(async () => {
     try {
@@ -357,6 +359,32 @@ export default function BarberDetail() {
                         <Clock className="w-4 h-4" />
                         <span>{service.duration} minutes</span>
                       </div>
+                      
+                      {/* Portfolio Images Preview */}
+                      {service.images && service.images.length > 0 && (
+                        <div className="mt-3">
+                          <div className="flex gap-2 overflow-x-auto">
+                            {service.images.slice(0, 3).map((image, imgIndex) => (
+                              <img
+                                key={imgIndex}
+                                src={image}
+                                alt={`${service.name} work ${imgIndex + 1}`}
+                                className="w-12 h-12 object-cover rounded border flex-shrink-0 cursor-pointer hover:opacity-80"
+                                onClick={() => setShowImageGallery({show: true, service})}
+                              />
+                            ))}
+                            {service.images.length > 3 && (
+                              <div 
+                                className="w-12 h-12 bg-gray-100 rounded border flex items-center justify-center text-xs text-gray-500 flex-shrink-0 cursor-pointer hover:bg-gray-200"
+                                onClick={() => setShowImageGallery({show: true, service})}
+                              >
+                                +{service.images.length - 3}
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">Click to view all work samples</p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -430,22 +458,23 @@ export default function BarberDetail() {
 
       {/* Booking Modal */}
       {showBookingModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md card-gradient">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-xl text-[#2C3E50]">Book Appointment</CardTitle>
-                <Button
-                  onClick={() => setShowBookingModal(false)}
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="w-full max-w-md my-8">
+            <Card className="card-gradient max-h-[90vh] overflow-y-auto">
+              <CardHeader className="sticky top-0 bg-white z-10 rounded-t-xl">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-lg sm:text-xl text-[#2C3E50]">Book Appointment</CardTitle>
+                  <Button
+                    onClick={() => setShowBookingModal(false)}
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4 pb-6">
               {/* Selected Service */}
               {selectedService && (
                 <div className="p-3 bg-orange-50 border border-[#FF6B35] rounded-lg">
@@ -474,14 +503,14 @@ export default function BarberDetail() {
               <div>
                 <Label>Select Time</Label>
                 {availableSlots.length > 0 ? (
-                  <div className="grid grid-cols-3 gap-2 mt-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 max-h-40 overflow-y-auto">
                     {availableSlots.map((slot) => (
                       <Button
                         key={slot}
                         onClick={() => setBookingData({ ...bookingData, time: slot })}
                         variant={bookingData.time === slot ? "default" : "outline"}
                         size="sm"
-                        className={bookingData.time === slot ? "bg-[#FF6B35] text-white" : ""}
+                        className={`min-h-10 ${bookingData.time === slot ? "bg-[#FF6B35] text-white" : ""}`}
                       >
                         {slot}
                       </Button>
@@ -537,24 +566,69 @@ export default function BarberDetail() {
               )}
 
               {/* Book Button */}
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-4 sticky bottom-0 bg-white p-4 -m-4 mt-0 rounded-b-xl border-t">
                 <Button
                   onClick={() => setShowBookingModal(false)}
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 btn-touch"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={bookAppointment}
                   disabled={bookingLoading || !bookingData.date || !bookingData.time}
-                  className="flex-1 btn-primary"
+                  className="flex-1 btn-primary btn-touch"
                 >
                   {bookingLoading ? "Booking..." : "Confirm Booking"}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Image Gallery Modal */}
+      {showImageGallery.show && showImageGallery.service && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <Card className="card-gradient">
+              <CardHeader className="sticky top-0 bg-white z-10 rounded-t-xl">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-lg text-[#2C3E50]">
+                    {showImageGallery.service.name} - Portfolio
+                  </CardTitle>
+                  <Button
+                    onClick={() => setShowImageGallery({show: false, service: null})}
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-4">
+                {showImageGallery.service.images && showImageGallery.service.images.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {showImageGallery.service.images.map((image, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={image}
+                          alt={`${showImageGallery.service?.name} work ${index + 1}`}
+                          className="w-full h-48 object-cover rounded-lg border"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No portfolio images available</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
     </div>
