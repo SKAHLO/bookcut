@@ -1,14 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { MongoClient } from 'mongodb'
+import { NextResponse } from 'next/server'
+import { ObjectId } from 'mongodb'
 import jwt from 'jsonwebtoken'
+import clientPromise from '@/lib/mongodb.js'
 
-const uri = process.env.MONGODB_URI as string
-const JWT_SECRET = process.env.JWT_SECRET as string
-
-// Simple in-memory storage for now - in production, use cloud storage like Cloudinary, AWS S3, etc.
-const uploadedImages: { [key: string]: string[] } = {}
-
-export async function POST(request: NextRequest) {
+export async function POST(request) {
   try {
     // Get authorization header
     const authHeader = request.headers.get('authorization')
@@ -17,10 +12,10 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.substring(7)
-    let decoded: any
+    let decoded
 
     try {
-      decoded = jwt.verify(token, JWT_SECRET)
+      decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret')
     } catch (error) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
@@ -31,8 +26,8 @@ export async function POST(request: NextRequest) {
 
     // Parse form data
     const formData = await request.formData()
-    const serviceName = formData.get('serviceName') as string
-    const images = formData.getAll('images') as File[]
+    const serviceName = formData.get('serviceName')
+    const images = formData.getAll('images')
 
     if (!serviceName) {
       return NextResponse.json({ error: 'Service name is required' }, { status: 400 })
@@ -55,7 +50,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Convert images to base64 for storage (in production, upload to cloud storage)
-    const imageUrls: string[] = []
+    const imageUrls = []
     
     for (const image of images) {
       const arrayBuffer = await image.arrayBuffer()
@@ -66,21 +61,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Connect to MongoDB
-    const client = new MongoClient(uri)
-    await client.connect()
+    const client = await clientPromise
     const db = client.db("bookcut")
     const barbersCollection = db.collection("barbers")
 
     // Update barber's service with new images
-    const barber = await barbersCollection.findOne({ userId: decoded.userId })
+    const barber = await barbersCollection.findOne({ userId: new ObjectId(decoded.userId) })
     
     if (!barber) {
-      await client.close()
       return NextResponse.json({ error: 'Barber not found' }, { status: 404 })
     }
 
     // Find the service and add images
-    const updatedServices = barber.services.map((service: any) => {
+    const updatedServices = barber.services.map((service) => {
       if (service.name === serviceName) {
         return {
           ...service,
@@ -92,11 +85,9 @@ export async function POST(request: NextRequest) {
 
     // Update the barber document
     await barbersCollection.updateOne(
-      { userId: decoded.userId },
+      { userId: new ObjectId(decoded.userId) },
       { $set: { services: updatedServices } }
     )
-
-    await client.close()
 
     return NextResponse.json({ 
       message: 'Images uploaded successfully',

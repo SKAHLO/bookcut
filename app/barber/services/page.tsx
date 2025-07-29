@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Clock, DollarSign, Edit, Upload, X, Image as ImageIcon, Plus } from "lucide-react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 
 interface Service {
   name: string
@@ -58,19 +59,27 @@ export default function BarberServices() {
   }
 
   const handleImageUpload = async (serviceIndex: number, files: FileList | null) => {
-    if (!files || files.length === 0) return
+    if (!files || files.length === 0) {
+      console.log('No files selected')
+      return
+    }
 
+    console.log(`Uploading ${files.length} files for service: ${services[serviceIndex].name}`)
     setUploadingImages(prev => ({ ...prev, [serviceIndex]: true }))
 
     try {
       const token = localStorage.getItem('token')
-      if (!token) return
+      if (!token) {
+        alert('No authentication token found. Please login again.')
+        return
+      }
 
       const formData = new FormData()
       formData.append('serviceName', services[serviceIndex].name)
       
       // Upload multiple files
       Array.from(files).forEach((file, index) => {
+        console.log(`Adding file ${index + 1}: ${file.name}, size: ${file.size}, type: ${file.type}`)
         formData.append(`images`, file)
       })
 
@@ -82,13 +91,18 @@ export default function BarberServices() {
         body: formData,
       })
 
+      console.log('Upload response status:', response.status)
+      
       if (response.ok) {
         const data = await response.json()
+        console.log('Upload successful:', data)
         // Refresh services to get updated images
-        loadServices()
+        await loadServices()
+        setShowImageModal({show: false, serviceIndex: -1})
         alert('Images uploaded successfully!')
       } else {
         const errorData = await response.json()
+        console.error('Upload failed:', errorData)
         alert(`Upload failed: ${errorData.error}`)
       }
     } catch (error) {
@@ -232,6 +246,7 @@ export default function BarberServices() {
                         <div className="grid grid-cols-2 gap-2">
                           {service.images.slice(0, 4).map((image, imgIndex) => (
                             <div key={imgIndex} className="relative group">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={image}
                                 alt={`${service.name} work ${imgIndex + 1}`}
@@ -304,18 +319,23 @@ export default function BarberServices() {
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="images">Select Images</Label>
-                <Input
-                  id="images"
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={(e) => handleImageUpload(showImageModal.serviceIndex, e.target.files)}
-                  disabled={uploadingImages[showImageModal.serviceIndex]}
-                  className="mt-2"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  You can select multiple images at once. Supported formats: JPG, PNG, WebP
-                </p>
+                <div className="mt-2 space-y-3">
+                  <Input
+                    id="images"
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => {
+                      console.log('File input changed, files:', e.target.files?.length)
+                      handleImageUpload(showImageModal.serviceIndex, e.target.files)
+                    }}
+                    disabled={uploadingImages[showImageModal.serviceIndex]}
+                    className="text-sm"
+                  />
+                  <p className="text-xs text-gray-500">
+                    You can select multiple images at once. Supported formats: JPG, PNG, WebP (Max 5MB each)
+                  </p>
+                </div>
               </div>
 
               {uploadingImages[showImageModal.serviceIndex] && (

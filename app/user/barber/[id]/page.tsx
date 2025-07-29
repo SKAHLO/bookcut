@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Star, MapPin, Clock, Phone, Calendar, ArrowLeft, Navigation, X } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
+import Image from "next/image"
 
 interface Service {
   name: string
@@ -365,6 +366,7 @@ export default function BarberDetail() {
                         <div className="mt-3">
                           <div className="flex gap-2 overflow-x-auto">
                             {service.images.slice(0, 3).map((image, imgIndex) => (
+                              /* eslint-disable-next-line @next/next/no-img-element */
                               <img
                                 key={imgIndex}
                                 src={image}
@@ -613,6 +615,7 @@ export default function BarberDetail() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {showImageGallery.service.images.map((image, index) => (
                       <div key={index} className="relative">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={image}
                           alt={`${showImageGallery.service?.name} work ${index + 1}`}
