@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Disable caching for debugging Google Auth issues
+  generateBuildId: () => Date.now().toString(),
+  
   async headers() {
     return [
       {
@@ -17,6 +20,22 @@ const nextConfig: NextConfig = {
               connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com;
               frame-src 'self' https://accounts.google.com;
             `.replace(/\s{2,}/g, ' ').trim()
+          },
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate'
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache'
+          },
+          {
+            key: 'Expires',
+            value: '0'
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN'
           }
         ]
       }

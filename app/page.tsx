@@ -13,9 +13,14 @@ import { Scissors, MapPin, Clock, Star } from "lucide-react"
 import Loading from "@/components/loading"
 import GoogleSignInButton from "@/components/google-signin-button"
 import GoogleSignInLoginButton from "@/components/google-signin-login-button"
+import { GoogleAuthProvider } from "@/components/GoogleAuthProvider"
+import { useGoogleAuthClean } from "@/hooks/useGoogleAuthClean"
 
-export default function HomePage() {
+function HomePageContent() {
   const { user, login, signup, googleSignIn, googleSignInLogin, loading } = useAuth()
+  
+  // Clean Google Auth cache on every page load to prevent browser caching issues
+  useGoogleAuthClean()
   const router = useRouter()
   const [isLogin, setIsLogin] = useState(true)
   const [formData, setFormData] = useState({
@@ -318,63 +323,12 @@ export default function HomePage() {
                 </form>
               )}
 
-              {/* Google Sign-In Buttons */}
-              {!isLogin && !showForgotPassword && !showResetPassword && (
-                <div className="space-y-3 mb-6">
-                  <GoogleSignInButton
-                    userType="user"
-                    onSuccess={handleGoogleSuccess}
-                    onError={handleGoogleError}
-                    disabled={isSubmitting}
-                  />
-
-                  <GoogleSignInButton
-                    userType="barber"
-                    onSuccess={handleGoogleSuccess}
-                    onError={handleGoogleError}
-                    disabled={isSubmitting}
-                  />
-
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-gray-300" />
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="px-2 bg-white text-gray-500">Or continue with email</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {!showForgotPassword && !showResetPassword && (
                 <>
                   <form onSubmit={handleSubmit} className="space-y-4">
                     {!isLogin && (
                       <>
-                        <div>
-                          <Label htmlFor="name">Full Name</Label>
-                          <Input
-                            id="name"
-                            type="text"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            required
-                            className="mt-1"
-                            disabled={isSubmitting}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="phone">Phone Number</Label>
-                          <Input
-                            id="phone"
-                            type="tel"
-                            value={formData.phone}
-                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                            required
-                            className="mt-1"
-                            disabled={isSubmitting}
-                          />
-                        </div>
+                        {/* Account Type Selector - Move to top for better UX */}
                         <div>
                           <Label>Account Type</Label>
                           <Tabs
@@ -399,6 +353,50 @@ export default function HomePage() {
                               </TabsTrigger>
                             </TabsList>
                           </Tabs>
+                        </div>
+
+                        {/* Google Sign-In Button - Now responds to account type selection */}
+                        <div className="space-y-3 mb-2">
+                          <GoogleSignInButton
+                            userType={formData.userType as "user" | "barber"}
+                            onSuccess={handleGoogleSuccess}
+                            onError={handleGoogleError}
+                            disabled={isSubmitting}
+                          />
+
+                          <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                              <span className="w-full border-t border-gray-300" />
+                            </div>
+                            <div className="relative flex justify-center text-sm">
+                              <span className="px-2 bg-white text-gray-500">Or continue with email</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="name">Full Name</Label>
+                          <Input
+                            id="name"
+                            type="text"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            required
+                            className="mt-1"
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="phone">Phone Number</Label>
+                          <Input
+                            id="phone"
+                            type="tel"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            required
+                            className="mt-1"
+                            disabled={isSubmitting}
+                          />
                         </div>
                       </>
                     )}
@@ -483,5 +481,13 @@ export default function HomePage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function HomePage() {
+  return (
+    <GoogleAuthProvider>
+      <HomePageContent />
+    </GoogleAuthProvider>
   )
 }
