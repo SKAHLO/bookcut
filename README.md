@@ -1,4 +1,4 @@
-This is a Next.Js app that allows users to book appointments with their barbers and search based on their resepetive locations. It also facilitates the sign up for barbers. Enjoy!!
+This is a Next.Js app that allows users to book appointments with their barbers and search based on their resepetive locations. It also facilitates the sign up for barbers. Enjoy!!!
 ## Getting Started
 
 # Install all required packages
