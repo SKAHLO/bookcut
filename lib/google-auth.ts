@@ -8,20 +8,38 @@
 let isGoogleLoaded = false
 let isGoogleInitialized = false
 let loadingPromise: Promise<void> | null = null
+let initPromise: Promise<void> | null = null
 
-// Global callback registry
-const callbackRegistry = new Map<string, (credential: string) => void>()
-let callbackCounter = 0
+// Current active callback
+let activeCallback: ((credential: string) => void) | null = null
+
+// Reset function to clear all state
+export function resetGoogleAuth(): void {
+  isGoogleLoaded = false
+  isGoogleInitialized = false
+  loadingPromise = null
+  initPromise = null
+  activeCallback = null
+  
+  // Remove existing script
+  const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]')
+  if (existingScript) {
+    existingScript.remove()
+  }
+  
+  // Clear window.google
+  if (typeof window !== 'undefined') {
+    delete (window as any).google
+  }
+}
 
 // Global Google callback function
 function globalGoogleCallback(response: any) {
   console.log("Global Google callback triggered")
   
-  // Find and execute the most recent callback
-  const callbacks = Array.from(callbackRegistry.entries())
-  if (callbacks.length > 0) {
-    const [, callback] = callbacks[callbacks.length - 1]
-    callback(response.credential)
+  if (activeCallback) {
+    activeCallback(response.credential)
+    activeCallback = null // Clear after use
   }
 }
 
@@ -86,27 +104,35 @@ export function loadGoogleSDK(): Promise<void> {
  * Initialize Google Sign-In (only once)
  */
 export async function initializeGoogleAuth(): Promise<void> {
-  if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
-    throw new Error("Google Client ID not configured")
+  if (initPromise) {
+    return initPromise
   }
 
-  // Load SDK first
-  await loadGoogleSDK()
-
-  // Initialize only once
-  if (!isGoogleInitialized && window.google) {
-    try {
-      window.google.accounts.id.initialize({
-        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-        callback: globalGoogleCallback,
-      })
-      isGoogleInitialized = true
-      console.log("Google Auth initialized successfully")
-    } catch (error) {
-      console.error("Error initializing Google Auth:", error)
-      throw error
+  initPromise = (async () => {
+    if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+      throw new Error("Google Client ID not configured")
     }
-  }
+
+    // Load SDK first
+    await loadGoogleSDK()
+
+    // Initialize only once
+    if (!isGoogleInitialized && window.google) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+          callback: globalGoogleCallback,
+        })
+        isGoogleInitialized = true
+        console.log("Google Auth initialized successfully")
+      } catch (error) {
+        console.error("Error initializing Google Auth:", error)
+        throw error
+      }
+    }
+  })()
+
+  return initPromise
 }
 
 /**
@@ -119,22 +145,13 @@ export async function promptGoogleSignIn(callback: (credential: string) => void)
     throw new Error("Google Sign-In not ready")
   }
 
-  // Register callback
-  const callbackId = `callback_${++callbackCounter}`
-  callbackRegistry.set(callbackId, callback)
-
-  // Clean up old callbacks (keep only the 3 most recent)
-  if (callbackRegistry.size > 3) {
-    const oldestKey = callbackRegistry.keys().next().value
-    if (oldestKey) {
-      callbackRegistry.delete(oldestKey)
-    }
-  }
+  // Set the active callback
+  activeCallback = callback
 
   try {
     window.google.accounts.id.prompt()
   } catch (error) {
-    callbackRegistry.delete(callbackId)
+    activeCallback = null
     throw error
   }
 }

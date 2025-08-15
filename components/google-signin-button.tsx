@@ -1,8 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { promptGoogleSignIn, isGoogleAuthReady, initializeGoogleAuth } from "@/lib/google-auth"
+import { useGoogleAuth } from "./GoogleAuthProvider"
 
 interface GoogleSignInButtonProps {
   userType: "user" | "barber"
@@ -17,30 +16,16 @@ export default function GoogleSignInButton({
   onError,
   disabled = false,
 }: GoogleSignInButtonProps) {
-  const [isReady, setIsReady] = useState(false)
-
-  useEffect(() => {
-    const initGoogle = async () => {
-      try {
-        await initializeGoogleAuth()
-        setIsReady(true)
-      } catch (error) {
-        console.error("Failed to initialize Google Auth:", error)
-        onError(error)
-      }
-    }
-
-    initGoogle()
-  }, [onError])
+  const { isReady, signIn } = useGoogleAuth()
 
   const handleGoogleSignIn = async () => {
-    if (!isGoogleAuthReady()) {
+    if (!isReady) {
       onError(new Error("Google Sign-In not ready"))
       return
     }
 
     try {
-      await promptGoogleSignIn((credential) => {
+      await signIn((credential) => {
         onSuccess(credential, userType)
       })
     } catch (error) {
