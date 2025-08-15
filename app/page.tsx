@@ -14,9 +14,13 @@ import Loading from "@/components/loading"
 import GoogleSignInButton from "@/components/google-signin-button"
 import GoogleSignInLoginButton from "@/components/google-signin-login-button"
 import { GoogleAuthProvider } from "@/components/GoogleAuthProvider"
+import { useGoogleAuthClean } from "@/hooks/useGoogleAuthClean"
 
 function HomePageContent() {
   const { user, login, signup, googleSignIn, googleSignInLogin, loading } = useAuth()
+  
+  // Clean Google Auth cache on every page load to prevent browser caching issues
+  useGoogleAuthClean()
   const router = useRouter()
   const [isLogin, setIsLogin] = useState(true)
   const [formData, setFormData] = useState({

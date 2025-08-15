@@ -37,23 +37,37 @@ export function GoogleAuthProvider({ children }: GoogleAuthProviderProps) {
         }
         console.log("✅ Google Client ID found")
 
-        // Reset any existing state first
+        // FORCE complete reset - prevent caching issues
         resetGoogleAuth()
         console.log("✅ Reset Google auth state")
 
-        // Check if script already exists
-        let existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]')
-        if (existingScript) {
-          console.log("🔄 Removing existing Google script")
-          existingScript.remove()
+        // Remove ALL Google scripts (including cached ones)
+        const allGoogleScripts = document.querySelectorAll('script[src*="google"], script[src*="gsi"]')
+        allGoogleScripts.forEach(script => {
+          const scriptElement = script as HTMLScriptElement
+          console.log("🗑️ Removing Google script:", scriptElement.src || 'unknown')
+          script.remove()
+        })
+
+        // Clear any Google-related globals that might be cached
+        if (typeof window !== 'undefined') {
+          delete (window as any).google
+          delete (window as any).gapi
+          delete (window as any).googleCallbackDispatcher
+          console.log("🧹 Cleared all Google globals")
         }
 
-        // Load script fresh
+        // Load script fresh with cache-busting
         console.log("📥 Loading Google script...")
         const script = document.createElement("script")
-        script.src = "https://accounts.google.com/gsi/client"
+        script.src = `https://accounts.google.com/gsi/client?v=${Date.now()}` // Cache busting
         script.async = true
         script.defer = true
+        script.crossOrigin = "anonymous"
+        
+        // Add additional cache-busting attributes
+        script.setAttribute('data-timestamp', Date.now().toString())
+        script.setAttribute('data-nocache', 'true')
         
         const loadPromise = new Promise<void>((resolve, reject) => {
           script.onload = () => {
@@ -118,25 +132,52 @@ export function GoogleAuthProvider({ children }: GoogleAuthProviderProps) {
 
     return new Promise((resolve, reject) => {
       try {
+        // FORCE re-initialize every time to prevent cache issues
+        console.log("🔄 Force re-initializing Google Sign-In...")
+        
+        // Clear any existing rendered buttons or popups
+        const existingButtons = document.querySelectorAll('[data-client-id], .g_id_signin, [role="button"][aria-labelledby]')
+        existingButtons.forEach(btn => btn.remove())
+        
         window.google.accounts.id.initialize({
           client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
           callback: (response: any) => {
+            console.log("✅ Google sign-in callback received")
             callback(response.credential)
             resolve()
           },
+          auto_select: false, // Never auto-select to avoid cache issues
+          cancel_on_tap_outside: true,
         })
         
-        window.google.accounts.id.prompt()
+        // Add a small delay to ensure initialization is complete
+        setTimeout(() => {
+          console.log("📱 Prompting Google Sign-In...")
+          window.google.accounts.id.prompt()
+        }, 100)
+        
       } catch (error) {
+        console.error("❌ Google sign-in error:", error)
         reject(error)
       }
     })
   }
 
   const retry = () => {
+    console.log("🔄 Retrying Google Auth initialization...")
+    
+    // Force complete cleanup
+    resetGoogleAuth()
+    
+    // Clear all Google-related DOM elements
+    const allGoogleElements = document.querySelectorAll('[data-client-id], .g_id_signin, [role="button"][aria-labelledby], script[src*="google"], script[src*="gsi"]')
+    allGoogleElements.forEach(el => el.remove())
+    
+    // Clear state and trigger re-initialization
     setError(null)
     setIsReady(false)
     setIsLoading(false)
+    
     // This will trigger the useEffect again
   }
 
