@@ -16,7 +16,7 @@ export default function GoogleSignInButton({
   onError,
   disabled = false,
 }: GoogleSignInButtonProps) {
-  const { isReady, signIn } = useGoogleAuth()
+  const { isReady, isLoading, error, signIn, retry } = useGoogleAuth()
 
   const handleGoogleSignIn = async () => {
     if (!isReady) {
