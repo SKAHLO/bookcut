@@ -28,6 +28,9 @@ export default function GoogleSignInButton({
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false)
 
   useEffect(() => {
+    console.log("=== Google Sign-In Button useEffect ===")
+    console.log("NEXT_PUBLIC_GOOGLE_CLIENT_ID:", process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID)
+    
     // Setup global callback dispatcher only once
     if (!window.googleCallbackDispatcher) {
       window.googleCallbackDispatcher = (credential: string) => {
@@ -49,12 +52,15 @@ export default function GoogleSignInButton({
     // Load Google Sign-In script only once
     const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]')
     if (!existingScript) {
+      console.log("Loading Google Sign-In script...")
       const script = document.createElement("script")
       script.src = "https://accounts.google.com/gsi/client"
       script.async = true
       script.defer = true
       script.onload = () => {
+        console.log("Google script loaded successfully")
         if (window.google) {
+          console.log("Initializing Google Sign-In with client ID:", process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID)
           window.google.accounts.id.initialize({
             client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
             callback: (response: any) => {
@@ -64,11 +70,17 @@ export default function GoogleSignInButton({
             },
           })
           setIsGoogleLoaded(true)
+        } else {
+          console.error("Google object not available after script load")
         }
+      }
+      script.onerror = () => {
+        console.error("Failed to load Google Sign-In script")
       }
       document.head.appendChild(script)
     } else if (window.google) {
       // Script already loaded
+      console.log("Google script already exists, setting loaded state")
       setIsGoogleLoaded(true)
     }
   }, [])

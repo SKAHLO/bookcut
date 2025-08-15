@@ -46,8 +46,14 @@ export default function BarberSettings() {
       sunday: { start: "09:00", end: "18:00", closed: true },
     } as WorkingHours,
   })
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  })
   const [newService, setNewService] = useState({ name: "", price: 0, duration: 30 })
   const [loading, setLoading] = useState(false)
+  const [passwordLoading, setPasswordLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
 
   useEffect(() => {
@@ -197,6 +203,56 @@ export default function BarberSettings() {
     } catch (error) {
       console.error('Geocoding error:', error)
       alert("Error getting coordinates. Please try again.")
+    }
+  }
+
+  const changePassword = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert("New passwords don't match")
+      return
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      alert("Password must be at least 6 characters long")
+      return
+    }
+
+    setPasswordLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        alert("Please login again")
+        return
+      }
+
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        }),
+      })
+
+      if (response.ok) {
+        alert("Password updated successfully!")
+        setPasswordData({
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        })
+      } else {
+        const errorData = await response.json()
+        alert(`Error: ${errorData.error}`)
+      }
+    } catch (error) {
+      console.error('Error changing password:', error)
+      alert("Error changing password")
+    } finally {
+      setPasswordLoading(false)
     }
   }
 
@@ -398,6 +454,57 @@ export default function BarberSettings() {
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Password Change */}
+          <Card className="card-gradient">
+            <CardHeader>
+              <CardTitle className="text-2xl text-[#2C3E50]">Change Password</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <Label htmlFor="currentPassword">Current Password</Label>
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="newPassword">New Password</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  className="mt-1"
+                  minLength={6}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  className="mt-1"
+                  minLength={6}
+                />
+              </div>
+
+              <Button 
+                onClick={changePassword} 
+                disabled={passwordLoading || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                className="btn-primary"
+              >
+                {passwordLoading ? "Updating..." : "Change Password"}
+              </Button>
             </CardContent>
           </Card>
 
