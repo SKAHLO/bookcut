@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { promptGoogleSignIn, isGoogleAuthReady, initializeGoogleAuth } from "@/lib/google-auth"
 
 interface GoogleSignInLoginButtonProps {
   onSuccess: (credential: string) => void
@@ -9,107 +10,38 @@ interface GoogleSignInLoginButtonProps {
   disabled?: boolean
 }
 
-declare global {
-  interface Window {
-    google: any
-  }
-}
-
 export default function GoogleSignInLoginButton({
   onSuccess,
   onError,
   disabled = false,
 }: GoogleSignInLoginButtonProps) {
-  const [isGoogleLoaded, setIsGoogleLoaded] = useState(false)
+  const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
-    console.log("=== Google Sign-In Login Button useEffect ===")
-    console.log("NEXT_PUBLIC_GOOGLE_CLIENT_ID:", process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID)
-    
-    const initializeGoogleLogin = () => {
-      if (window.google && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
-        console.log("Initializing Google Sign-In Login with client ID:", process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID)
-        
-        try {
-          window.google.accounts.id.initialize({
-            client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-            callback: (response: any) => {
-              onSuccess(response.credential)
-            },
-          })
-          setIsGoogleLoaded(true)
-          console.log("Google Sign-In Login initialized successfully")
-        } catch (error) {
-          console.error("Error initializing Google Sign-In Login:", error)
-        }
-      } else {
-        console.error("Google object or client ID not available for login")
-      }
-    }
-
-    // Check if Google is already loaded
-    if (window.google) {
-      console.log("Google already available for login, initializing...")
-      initializeGoogleLogin()
-      return
-    }
-
-    // Load Google Sign-In script
-    const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]')
-    if (!existingScript) {
-      console.log("Loading Google Sign-In script for login...")
-      const script = document.createElement("script")
-      script.src = "https://accounts.google.com/gsi/client"
-      script.async = true
-      script.defer = true
-      script.onload = () => {
-        console.log("Google script loaded successfully for login")
-        // Wait a bit for Google object to be fully available
-        setTimeout(() => {
-          initializeGoogleLogin()
-        }, 100)
-      }
-      script.onerror = () => {
-        console.error("Failed to load Google Sign-In script for login")
-      }
-      document.head.appendChild(script)
-    } else {
-      console.log("Google script exists for login, waiting for Google object...")
-      // Script exists but Google might not be ready yet
-      const checkGoogle = setInterval(() => {
-        if (window.google) {
-          clearInterval(checkGoogle)
-          initializeGoogleLogin()
-        }
-      }, 100)
-      
-      // Stop checking after 5 seconds
-      setTimeout(() => clearInterval(checkGoogle), 5000)
-    }
-  }, [onSuccess])
-
-  const handleGoogleSignIn = () => {
-    console.log("=== Login Button clicked ===")
-    console.log("isGoogleLoaded:", isGoogleLoaded)
-    console.log("window.google available:", !!window.google)
-    
-    if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
-      console.error("NEXT_PUBLIC_GOOGLE_CLIENT_ID is not set")
-      onError(new Error("Google Client ID not configured"))
-      return
-    }
-    
-    if (window.google && isGoogleLoaded) {
+    const initGoogle = async () => {
       try {
-        console.log("Prompting Google Sign-In for login...")
-        window.google.accounts.id.prompt()
+        await initializeGoogleAuth()
+        setIsReady(true)
       } catch (error) {
-        console.error("Error prompting Google Sign-In for login:", error)
+        console.error("Failed to initialize Google Auth:", error)
         onError(error)
       }
-    } else {
-      console.error("Google Sign-In not ready for login - isGoogleLoaded:", isGoogleLoaded, "window.google:", !!window.google)
-      onError(new Error("Google Sign-In not loaded"))
+    }
+
+    initGoogle()
+  }, [onError])
+
+  const handleGoogleSignIn = async () => {
+    if (!isGoogleAuthReady()) {
+      onError(new Error("Google Sign-In not ready"))
+      return
+    }
+
+    try {
+      await promptGoogleSignIn(onSuccess)
+    } catch (error) {
+      console.error("Google Sign-In error:", error)
+      onError(error)
     }
   }
 
@@ -117,7 +49,7 @@ export default function GoogleSignInLoginButton({
     <Button
       type="button"
       onClick={handleGoogleSignIn}
-      disabled={disabled || !isGoogleLoaded}
+      disabled={disabled || !isReady}
       className="w-full flex items-center justify-center gap-3 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
     >
       <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -138,7 +70,7 @@ export default function GoogleSignInLoginButton({
           d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
         />
       </svg>
-      {!isGoogleLoaded ? "Loading..." : "Continue with Google"}
+      {!isReady ? "Loading..." : "Continue with Google"}
     </Button>
   )
 }
