@@ -5,17 +5,14 @@ import { useAuth } from "@/contexts/AuthContext"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Clock, DollarSign, Edit, Upload, X, Image as ImageIcon, Plus } from "lucide-react"
+
+import { Clock, DollarSign, Edit } from "lucide-react"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
 
 interface Service {
   name: string
   price: number
   duration: number
-  images?: string[]
 }
 
 export default function BarberServices() {
@@ -23,8 +20,6 @@ export default function BarberServices() {
   const router = useRouter()
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
-  const [uploadingImages, setUploadingImages] = useState<{[key: number]: boolean}>({})
-  const [showImageModal, setShowImageModal] = useState<{show: boolean, serviceIndex: number}>({show: false, serviceIndex: -1})
 
   useEffect(() => {
     if (user?.userType !== "barber") {
@@ -58,93 +53,7 @@ export default function BarberServices() {
     }
   }
 
-  const handleImageUpload = async (serviceIndex: number, files: FileList | null) => {
-    if (!files || files.length === 0) {
-      console.log('No files selected')
-      return
-    }
 
-    console.log(`Uploading ${files.length} files for service: ${services[serviceIndex].name}`)
-    setUploadingImages(prev => ({ ...prev, [serviceIndex]: true }))
-
-    try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        alert('No authentication token found. Please login again.')
-        return
-      }
-
-      const formData = new FormData()
-      formData.append('serviceName', services[serviceIndex].name)
-      
-      // Upload multiple files
-      Array.from(files).forEach((file, index) => {
-        console.log(`Adding file ${index + 1}: ${file.name}, size: ${file.size}, type: ${file.type}`)
-        formData.append(`images`, file)
-      })
-
-      const response = await fetch('/api/barbers/upload-images', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      })
-
-      console.log('Upload response status:', response.status)
-      
-      if (response.ok) {
-        const data = await response.json()
-        console.log('Upload successful:', data)
-        // Refresh services to get updated images
-        await loadServices()
-        setShowImageModal({show: false, serviceIndex: -1})
-        alert('Images uploaded successfully!')
-      } else {
-        const errorData = await response.json()
-        console.error('Upload failed:', errorData)
-        alert(`Upload failed: ${errorData.error}`)
-      }
-    } catch (error) {
-      console.error('Error uploading images:', error)
-      alert('Error uploading images. Please try again.')
-    } finally {
-      setUploadingImages(prev => ({ ...prev, [serviceIndex]: false }))
-    }
-  }
-
-  const removeImage = async (serviceIndex: number, imageUrl: string) => {
-    if (!confirm('Are you sure you want to remove this image?')) return
-
-    try {
-      const token = localStorage.getItem('token')
-      if (!token) return
-
-      const response = await fetch('/api/barbers/remove-image', {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          serviceName: services[serviceIndex].name,
-          imageUrl: imageUrl
-        }),
-      })
-
-      if (response.ok) {
-        // Refresh services to get updated images
-        loadServices()
-        alert('Image removed successfully!')
-      } else {
-        const errorData = await response.json()
-        alert(`Remove failed: ${errorData.error}`)
-      }
-    } catch (error) {
-      console.error('Error removing image:', error)
-      alert('Error removing image. Please try again.')
-    }
-  }
 
   if (loading) {
     return (
@@ -227,56 +136,7 @@ export default function BarberServices() {
                       </div>
                     </div>
 
-                    {/* Portfolio Images */}
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm font-medium text-gray-700">Portfolio Images</Label>
-                        <Button
-                          onClick={() => setShowImageModal({show: true, serviceIndex: index})}
-                          size="sm"
-                          variant="outline"
-                          className="text-xs"
-                        >
-                          <Plus className="w-3 h-3 mr-1" />
-                          Add Images
-                        </Button>
-                      </div>
-                      
-                      {service.images && service.images.length > 0 ? (
-                        <div className="grid grid-cols-2 gap-2">
-                          {service.images.slice(0, 4).map((image, imgIndex) => (
-                            <div key={imgIndex} className="relative group">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={image}
-                                alt={`${service.name} work ${imgIndex + 1}`}
-                                className="w-full h-20 object-cover rounded-lg border"
-                              />
-                              <Button
-                                onClick={() => removeImage(index, image)}
-                                size="sm"
-                                variant="destructive"
-                                className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <X className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          ))}
-                          {service.images.length > 4 && (
-                            <div className="flex items-center justify-center h-20 bg-gray-100 rounded-lg border text-xs text-gray-500">
-                              +{service.images.length - 4} more
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center h-20 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 text-gray-500">
-                          <div className="text-center">
-                            <ImageIcon className="w-6 h-6 mx-auto mb-1" />
-                            <p className="text-xs">No images yet</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+
                   </div>
                 </CardContent>
               </Card>
@@ -297,68 +157,7 @@ export default function BarberServices() {
         )}
       </div>
 
-      {/* Image Upload Modal */}
-      {showImageModal.show && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md card-gradient">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-lg text-[#2C3E50]">
-                  Add Images for {services[showImageModal.serviceIndex]?.name}
-                </CardTitle>
-                <Button
-                  onClick={() => setShowImageModal({show: false, serviceIndex: -1})}
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="images">Select Images</Label>
-                <div className="mt-2 space-y-3">
-                  <Input
-                    id="images"
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={(e) => {
-                      console.log('File input changed, files:', e.target.files?.length)
-                      handleImageUpload(showImageModal.serviceIndex, e.target.files)
-                    }}
-                    disabled={uploadingImages[showImageModal.serviceIndex]}
-                    className="text-sm"
-                  />
-                  <p className="text-xs text-gray-500">
-                    You can select multiple images at once. Supported formats: JPG, PNG, WebP (Max 5MB each)
-                  </p>
-                </div>
-              </div>
 
-              {uploadingImages[showImageModal.serviceIndex] && (
-                <div className="flex items-center justify-center py-4">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF6B35]"></div>
-                  <span className="ml-2 text-sm text-gray-600">Uploading images...</span>
-                </div>
-              )}
-
-              <div className="flex gap-3 pt-2">
-                <Button
-                  onClick={() => setShowImageModal({show: false, serviceIndex: -1})}
-                  variant="outline"
-                  className="flex-1"
-                  disabled={uploadingImages[showImageModal.serviceIndex]}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   )
 }
