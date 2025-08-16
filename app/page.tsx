@@ -1,5 +1,8 @@
 "use client"
 
+// Force dynamic rendering for Google auth
+export const dynamic = 'force-dynamic'
+
 import type React from "react"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"

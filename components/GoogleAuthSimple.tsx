@@ -24,13 +24,16 @@ export default function GoogleAuthSimple({
   useEffect(() => {
     // Simple Google SDK loading
     const loadGoogle = () => {
+      // Always reload to prevent caching issues
       if (window.google) {
-        setIsReady(true)
-        return
+        delete (window as any).google
       }
 
+      // Remove existing scripts
+      document.querySelectorAll('script[src*="accounts.google.com"]').forEach(s => s.remove())
+
       const script = document.createElement('script')
-      script.src = 'https://accounts.google.com/gsi/client'
+      script.src = `https://accounts.google.com/gsi/client?v=${Date.now()}`
       script.async = true
       script.defer = true
       
