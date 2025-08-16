@@ -51,12 +51,12 @@ export default function GoogleAuthSimple({
             }
           }, 100)
           
-          // Timeout after 15 seconds
+          // Timeout after 45 seconds (much longer for slow connections)
           setTimeout(() => {
-            clearInterval(checkGoogle)
-            console.error("❌ Google SDK timeout")
-            onError(new Error("Google SDK failed to load"))
-          }, 15000)
+          clearInterval(checkGoogle)
+          console.error("❌ Google SDK timeout")
+          onError(new Error("Google SDK failed to load"))
+          }, 45000)
         }
         
         script.onerror = () => {

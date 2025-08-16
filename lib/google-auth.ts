@@ -83,11 +83,11 @@ export function loadGoogleSDK(): Promise<void> {
         }
       }, 50)
       
-      // Timeout after 10 seconds
+      // Timeout after 45 seconds
       setTimeout(() => {
         clearInterval(checkGoogle)
         reject(new Error("Google SDK load timeout"))
-      }, 10000)
+      }, 45000)
     }
     
     script.onerror = () => {
