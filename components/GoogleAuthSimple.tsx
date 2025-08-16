@@ -22,118 +22,81 @@ export default function GoogleAuthSimple({
   const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
-    const loadGoogle = async () => {
-      try {
-        // Remove any existing Google scripts to prevent caching
-        document.querySelectorAll('script[src*="accounts.google.com"], script[src*="gsi"]').forEach(s => s.remove())
-        
-        // Clear Google globals
-        if (typeof window !== 'undefined') {
-          delete (window as any).google
-          delete (window as any).gapi
-        }
-
-        // Load fresh Google script with cache busting
-        const script = document.createElement('script')
-        script.src = `https://accounts.google.com/gsi/client?v=${Date.now()}&nocache=${Math.random()}`
-        script.async = true
-        script.defer = true
-        
-        script.onload = () => {
-          console.log("📦 Google script loaded")
-          
-          // Wait for window.google to be available
-          const checkGoogle = setInterval(() => {
-            if (window.google) {
-              clearInterval(checkGoogle)
-              console.log("✅ Google SDK ready")
-              setIsReady(true)
-            }
-          }, 100)
-          
-          // Timeout after 45 seconds (much longer for slow connections)
-          setTimeout(() => {
-          clearInterval(checkGoogle)
-          console.error("❌ Google SDK timeout")
-          onError(new Error("Google SDK failed to load"))
-          }, 45000)
-        }
-        
-        script.onerror = () => {
-          console.error("❌ Failed to load Google script")
-          onError(new Error("Failed to load Google authentication"))
-        }
-        
-        document.head.appendChild(script)
-        
-      } catch (error) {
-        console.error("❌ Google loading error:", error)
-        onError(error)
+    // Simple Google SDK loading
+    const loadGoogle = () => {
+      if (window.google) {
+        setIsReady(true)
+        return
       }
+
+      const script = document.createElement('script')
+      script.src = 'https://accounts.google.com/gsi/client'
+      script.async = true
+      script.defer = true
+      
+      script.onload = () => {
+        console.log("Google script loaded")
+        // Simple check for Google availability
+        const interval = setInterval(() => {
+          if (window.google) {
+            clearInterval(interval)
+            setIsReady(true)
+            console.log("Google SDK ready")
+          }
+        }, 100)
+        
+        // Simple timeout
+        setTimeout(() => {
+          clearInterval(interval)
+          if (!window.google) {
+            console.log("Google SDK took too long to load")
+          }
+        }, 30000)
+      }
+      
+      script.onerror = () => {
+        console.log("Failed to load Google SDK")
+      }
+      
+      document.head.appendChild(script)
     }
 
     loadGoogle()
-  }, [onError])
+  }, [])
 
   const handleGoogleAuth = async () => {
-    if (!isReady || !window.google) {
-      onError(new Error("Google authentication not ready"))
+    if (!window.google) {
+      onError(new Error("Google authentication not available"))
       return
     }
 
     setIsLoading(true)
-    console.log("🚀 Starting Google authentication...")
+    console.log("Starting Google authentication...")
 
     try {
-      // Force fresh initialization every time
-      const uniqueId = `google_${Date.now()}_${Math.random().toString(36).substring(7)}`
-      
-      // Set a timeout to reset loading state if nothing happens
-      const timeoutId = setTimeout(() => {
-        console.log("⏰ Google auth timeout - prompt may have been blocked")
-        setIsLoading(false)
-        // Don't call onError for timeout - let user try again
-      }, 10000) // 10 second timeout
-      
       window.google.accounts.id.initialize({
         client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-        hosted_domain: undefined, // Allow any domain temporarily
         callback: (response: any) => {
-          console.log("✅ Google credential received")
-          clearTimeout(timeoutId)
+          console.log("Google credential received")
           setIsLoading(false)
           onSuccess(response.credential, userType)
         },
-        error_callback: (error: any) => {
-          console.error("❌ Google callback error:", error)
-          clearTimeout(timeoutId)
-          setIsLoading(false)
-          onError(new Error("Google authentication failed: " + (error.type || "Unknown error")))
-        },
         auto_select: false,
         cancel_on_tap_outside: true,
-        use_fedcm_for_prompt: false, // Disable FedCM - causes issues on localhost
-        nonce: uniqueId,
       })
 
-      // Small delay to ensure initialization is complete
+      // Try to show prompt
       setTimeout(() => {
         try {
-          console.log("📱 Prompting Google Sign-In...")
-
-          
-          // Try prompt without deprecated status methods
           window.google.accounts.id.prompt()
-        } catch (promptError) {
-          console.log("ℹ️ Google prompt blocked - try clicking button again")
-          clearTimeout(timeoutId)
+        } catch (error) {
+          console.log("Prompt blocked, but authentication is ready")
           setIsLoading(false)
-          // Don't show error - let user retry
         }
-      }, 200)
+      }, 100)
 
     } catch (error) {
-      console.error("❌ Google auth error:", error)
+      console.error("Google auth error:", error)
       setIsLoading(false)
       onError(error)
     }
