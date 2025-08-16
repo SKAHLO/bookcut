@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Scissors, MapPin, Clock, Star } from "lucide-react"
 import Loading from "@/components/loading"
-import GoogleAuthNuclear from "@/components/GoogleAuthNuclear"
+import GoogleAuthSimple from "@/components/GoogleAuthSimple"
 
 export default function HomePage() {
   const { user, login, signup, googleSignIn, googleSignInLogin, loading } = useAuth()
@@ -331,8 +331,8 @@ export default function HomePage() {
                       </div>
                     )}
 
-                    {/* NUCLEAR GOOGLE AUTH BUTTON */}
-                    <GoogleAuthNuclear
+                    {/* SIMPLE GOOGLE AUTH BUTTON - NO 404 ERRORS */}
+                    <GoogleAuthSimple
                       userType={!isLogin ? formData.userType as "user" | "barber" : undefined}
                       onSuccess={handleGoogleSuccess}
                       onError={handleGoogleError}
