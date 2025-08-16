@@ -73,13 +73,27 @@ export default function GoogleAuthSimple({
     setIsLoading(true)
     console.log("Starting Google authentication...")
 
+    // Timeout to prevent infinite spinning
+    const authTimeout = setTimeout(() => {
+      console.log("Google auth timeout - stopping loading")
+      setIsLoading(false)
+      onError(new Error("Google authentication failed. Add 'http://localhost:3000' to Google OAuth authorized origins."))
+    }, 5000)
+
     try {
       window.google.accounts.id.initialize({
         client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
         callback: (response: any) => {
           console.log("Google credential received")
+          clearTimeout(authTimeout)
           setIsLoading(false)
           onSuccess(response.credential, userType)
+        },
+        error_callback: (error: any) => {
+          console.error("Google callback error:", error)
+          clearTimeout(authTimeout)
+          setIsLoading(false)
+          onError(new Error("Google authentication failed: " + (error.type || "Network error")))
         },
         auto_select: false,
         cancel_on_tap_outside: true,
@@ -88,15 +102,25 @@ export default function GoogleAuthSimple({
       // Try to show prompt
       setTimeout(() => {
         try {
-          window.google.accounts.id.prompt()
+          window.google.accounts.id.prompt((notification: any) => {
+            if (notification && notification.g === 'skipped') {
+              console.log("Google prompt was skipped")
+              clearTimeout(authTimeout)
+              setIsLoading(false)
+              onError(new Error("Google sign-in was blocked. Please enable popups and third-party cookies."))
+            }
+          })
         } catch (error) {
-          console.log("Prompt blocked, but authentication is ready")
+          console.log("Prompt blocked:", error)
+          clearTimeout(authTimeout)
           setIsLoading(false)
+          onError(new Error("Google sign-in popup was blocked. Please enable popups."))
         }
       }, 100)
 
     } catch (error) {
       console.error("Google auth error:", error)
+      clearTimeout(authTimeout)
       setIsLoading(false)
       onError(error)
     }
