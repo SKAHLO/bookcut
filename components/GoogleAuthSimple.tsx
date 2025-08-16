@@ -90,10 +90,10 @@ export default function GoogleAuthSimple({
       
       // Set a timeout to reset loading state if nothing happens
       const timeoutId = setTimeout(() => {
-        console.error("❌ Google auth timeout - resetting state")
+        console.log("⏰ Google auth timeout - prompt may have been blocked")
         setIsLoading(false)
-        onError(new Error("Google authentication timed out"))
-      }, 30000) // 30 second timeout
+        // Don't call onError for timeout - let user try again
+      }, 10000) // 10 second timeout
       
       window.google.accounts.id.initialize({
         client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
@@ -112,7 +112,7 @@ export default function GoogleAuthSimple({
         },
         auto_select: false,
         cancel_on_tap_outside: true,
-        use_fedcm_for_prompt: true, // Enable FedCM for better compatibility
+        use_fedcm_for_prompt: false, // Disable FedCM - causes issues on localhost
         nonce: uniqueId,
       })
 
@@ -122,25 +122,13 @@ export default function GoogleAuthSimple({
           console.log("📱 Prompting Google Sign-In...")
 
           
-          window.google.accounts.id.prompt((notification: any) => {
-            console.log("📋 Google prompt notification:", notification)
-            
-            // If prompt fails, the button will still work
-            if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-              console.log("ℹ️ Prompt not shown, but button is available")
-              clearTimeout(timeoutId)
-              setIsLoading(false)
-            } else if (notification.isDismissedMoment()) {
-              console.log("ℹ️ User dismissed Google prompt")
-              clearTimeout(timeoutId)
-              setIsLoading(false)
-            }
-          })
+          // Try prompt without deprecated status methods
+          window.google.accounts.id.prompt()
         } catch (promptError) {
-          console.error("❌ Error prompting Google:", promptError)
+          console.log("ℹ️ Google prompt blocked - try clicking button again")
           clearTimeout(timeoutId)
           setIsLoading(false)
-          onError(new Error("Failed to show Google sign-in"))
+          // Don't show error - let user retry
         }
       }, 200)
 
