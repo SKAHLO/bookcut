@@ -34,6 +34,9 @@ export default function GoogleAuthNuclear({
       const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
       const nonce = Math.random().toString(36).substring(2, 15) + Date.now().toString()
       
+      // POPUP APPROACH: Use OAuth flow with proper callback URL
+      // This bypasses all caching and works immediately
+      
       // Construct Google OAuth URL with cache-busting parameters
       const googleAuthUrl = new URL('https://accounts.google.com/oauth/v2/auth')
       googleAuthUrl.searchParams.set('client_id', clientId)
@@ -83,7 +86,7 @@ export default function GoogleAuthNuclear({
 
         if (event.data.success) {
           console.log("✅ Google Auth successful:", event.data)
-          onSuccess(event.data.credential || event.data.code, userType)
+          onSuccess(event.data.credential, event.data.userType || userType)
         } else {
           console.error("❌ Google Auth failed:", event.data.error)
           onError(new Error(event.data.error || "Authentication failed"))
