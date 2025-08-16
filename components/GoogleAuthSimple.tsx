@@ -82,17 +82,33 @@ export default function GoogleAuthSimple({
     }
 
     setIsLoading(true)
+    console.log("🚀 Starting Google authentication...")
 
     try {
       // Force fresh initialization every time
       const uniqueId = `google_${Date.now()}_${Math.random().toString(36).substring(7)}`
       
+      // Set a timeout to reset loading state if nothing happens
+      const timeoutId = setTimeout(() => {
+        console.error("❌ Google auth timeout - resetting state")
+        setIsLoading(false)
+        onError(new Error("Google authentication timed out"))
+      }, 30000) // 30 second timeout
+      
       window.google.accounts.id.initialize({
         client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+        hosted_domain: undefined, // Allow any domain temporarily
         callback: (response: any) => {
           console.log("✅ Google credential received")
+          clearTimeout(timeoutId)
           setIsLoading(false)
           onSuccess(response.credential, userType)
+        },
+        error_callback: (error: any) => {
+          console.error("❌ Google callback error:", error)
+          clearTimeout(timeoutId)
+          setIsLoading(false)
+          onError(new Error("Google authentication failed: " + (error.type || "Unknown error")))
         },
         auto_select: false,
         cancel_on_tap_outside: true,
@@ -102,8 +118,30 @@ export default function GoogleAuthSimple({
 
       // Small delay to ensure initialization is complete
       setTimeout(() => {
-        console.log("📱 Prompting Google Sign-In...")
-        window.google.accounts.id.prompt()
+        try {
+          console.log("📱 Prompting Google Sign-In...")
+          window.google.accounts.id.prompt((notification: any) => {
+            console.log("📋 Google prompt notification:", notification)
+            
+            // Handle different notification types
+            if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+              console.warn("⚠️ Google prompt was not displayed or skipped")
+              clearTimeout(timeoutId)
+              setIsLoading(false)
+              onError(new Error("Google sign-in popup was blocked or dismissed"))
+            } else if (notification.isDismissedMoment()) {
+              console.log("ℹ️ User dismissed Google prompt")
+              clearTimeout(timeoutId)
+              setIsLoading(false)
+              onError(new Error("Google sign-in was dismissed"))
+            }
+          })
+        } catch (promptError) {
+          console.error("❌ Error prompting Google:", promptError)
+          clearTimeout(timeoutId)
+          setIsLoading(false)
+          onError(new Error("Failed to show Google sign-in"))
+        }
       }, 200)
 
     } catch (error) {
