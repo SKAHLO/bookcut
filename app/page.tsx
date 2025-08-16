@@ -439,10 +439,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Success Indicator */}
-      <div className="fixed bottom-4 right-4 bg-green-600 text-white p-2 rounded text-xs">
-        ✅ No Cache Issues - Nuclear Fix Active!
-      </div>
+
     </div>
   )
 }

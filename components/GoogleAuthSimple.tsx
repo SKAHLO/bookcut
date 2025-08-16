@@ -93,7 +93,13 @@ export default function GoogleAuthSimple({
           console.error("Google callback error:", error)
           clearTimeout(authTimeout)
           setIsLoading(false)
-          onError(new Error("Google authentication failed: " + (error.type || "Network error")))
+          if (error.type === 'popup_closed_by_user') {
+            onError(new Error("Google sign-in was cancelled"))
+          } else if (error.type === 'popup_failed_to_open') {
+            onError(new Error("Please allow popups for this site"))
+          } else {
+            onError(new Error("Add 'http://localhost:3000' to Google OAuth authorized origins"))
+          }
         },
         auto_select: false,
         cancel_on_tap_outside: true,
