@@ -120,18 +120,7 @@ export default function GoogleAuthSimple({
       setTimeout(() => {
         try {
           console.log("📱 Prompting Google Sign-In...")
-          // Try button rendering if prompt fails
-          window.google.accounts.id.renderButton(
-            document.getElementById('google-signin-button') || document.body,
-            {
-              theme: 'outline',
-              size: 'large',
-              type: 'standard',
-              text: 'continue_with',
-              shape: 'rectangular',
-              logo_alignment: 'left'
-            }
-          )
+
           
           window.google.accounts.id.prompt((notification: any) => {
             console.log("📋 Google prompt notification:", notification)
@@ -172,15 +161,12 @@ export default function GoogleAuthSimple({
   }
 
   return (
-    <div>
-      <div id="google-signin-button" style={{display: isReady ? 'block' : 'none'}}></div>
-      <Button
-        type="button"
-        onClick={handleGoogleAuth}
-        disabled={disabled || !isReady || isLoading}
-        className="w-full flex items-center justify-center gap-3 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-        style={{display: isReady ? 'none' : 'flex'}}
-      >
+    <Button
+      type="button"
+      onClick={handleGoogleAuth}
+      disabled={disabled || !isReady || isLoading}
+      className="w-full flex items-center justify-center gap-3 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+    >
       {(isLoading || !isReady) ? (
         <div className="animate-spin w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full"></div>
       ) : (
@@ -204,8 +190,7 @@ export default function GoogleAuthSimple({
         </svg>
       )}
       {buttonText()}
-      </Button>
-    </div>
+    </Button>
   )
 }
 
