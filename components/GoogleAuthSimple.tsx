@@ -112,7 +112,7 @@ export default function GoogleAuthSimple({
         },
         auto_select: false,
         cancel_on_tap_outside: true,
-        use_fedcm_for_prompt: false, // Disable FedCM to prevent caching
+        use_fedcm_for_prompt: true, // Enable FedCM for better compatibility
         nonce: uniqueId,
       })
 
@@ -120,20 +120,31 @@ export default function GoogleAuthSimple({
       setTimeout(() => {
         try {
           console.log("📱 Prompting Google Sign-In...")
+          // Try button rendering if prompt fails
+          window.google.accounts.id.renderButton(
+            document.getElementById('google-signin-button') || document.body,
+            {
+              theme: 'outline',
+              size: 'large',
+              type: 'standard',
+              text: 'continue_with',
+              shape: 'rectangular',
+              logo_alignment: 'left'
+            }
+          )
+          
           window.google.accounts.id.prompt((notification: any) => {
             console.log("📋 Google prompt notification:", notification)
             
-            // Handle different notification types
+            // If prompt fails, the button will still work
             if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-              console.warn("⚠️ Google prompt was not displayed or skipped")
+              console.log("ℹ️ Prompt not shown, but button is available")
               clearTimeout(timeoutId)
               setIsLoading(false)
-              onError(new Error("Google sign-in popup was blocked or dismissed"))
             } else if (notification.isDismissedMoment()) {
               console.log("ℹ️ User dismissed Google prompt")
               clearTimeout(timeoutId)
               setIsLoading(false)
-              onError(new Error("Google sign-in was dismissed"))
             }
           })
         } catch (promptError) {
@@ -161,12 +172,15 @@ export default function GoogleAuthSimple({
   }
 
   return (
-    <Button
-      type="button"
-      onClick={handleGoogleAuth}
-      disabled={disabled || !isReady || isLoading}
-      className="w-full flex items-center justify-center gap-3 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-    >
+    <div>
+      <div id="google-signin-button" style={{display: isReady ? 'block' : 'none'}}></div>
+      <Button
+        type="button"
+        onClick={handleGoogleAuth}
+        disabled={disabled || !isReady || isLoading}
+        className="w-full flex items-center justify-center gap-3 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+        style={{display: isReady ? 'none' : 'flex'}}
+      >
       {(isLoading || !isReady) ? (
         <div className="animate-spin w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full"></div>
       ) : (
@@ -190,7 +204,8 @@ export default function GoogleAuthSimple({
         </svg>
       )}
       {buttonText()}
-    </Button>
+      </Button>
+    </div>
   )
 }
 
