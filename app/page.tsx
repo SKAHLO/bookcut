@@ -449,7 +449,7 @@ export default function HomePage() {
                       className="text-[#FF6B35] hover:underline"
                       disabled={isSubmitting}
                     >
-                      {isLogin ? "Don&apos;t have an account? Sign up" : "Already have an account? Sign in"}
+                      {isLogin ? "Do not have an account? Sign up" : "Already have an account? Sign in"}
                     </button>
                   </div>
                 </>

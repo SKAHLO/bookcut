@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import crypto from "crypto"
 import bcrypt from "bcryptjs"
 import clientPromise from "@/lib/mongodb"
-import { sendPasswordResetEmail } from "@/lib/email"
+import { sendPasswordResetEmail } from "@/lib/email-sendgrid"
 
 export async function POST(request) {
   try {
