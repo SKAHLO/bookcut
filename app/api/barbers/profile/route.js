@@ -19,7 +19,7 @@ export async function GET(request) {
     const db = client.db("bookcut")
 
     const barber = await db.collection("barbers").findOne({ 
-      userId: new ObjectId(userId) 
+      _id: new ObjectId(userId) 
     })
 
     if (!barber) {
@@ -67,7 +67,7 @@ export async function PUT(request) {
     }
 
     const result = await db.collection("barbers").updateOne(
-      { userId: new ObjectId(userId) },
+      { _id: new ObjectId(userId) },
       { $set: updateData }
     )
 

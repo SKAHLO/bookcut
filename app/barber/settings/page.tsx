@@ -180,29 +180,34 @@ export default function BarberSettings() {
     }
 
     try {
-      // Use a simple geocoding approach - in production, you'd use Google Geocoding API
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(profile.location.address)}&limit=1`)
-      const data = await response.json()
+      // Use our server-side geocoding API to avoid CORS issues
+      const response = await fetch('/api/geocode', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ address: profile.location.address })
+      })
       
-      if (data && data.length > 0) {
-        const lat = parseFloat(data[0].lat)
-        const lon = parseFloat(data[0].lon)
+      if (response.ok) {
+        const data = await response.json()
         
         setProfile({
           ...profile,
           location: {
             ...profile.location,
-            coordinates: [lon, lat] // MongoDB expects [longitude, latitude]
+            coordinates: data.coordinates
           }
         })
         
         alert("Coordinates updated! Please save your profile.")
       } else {
-        alert("Could not find coordinates for this address. Please check the address and try again.")
+        const errorData = await response.json()
+        alert(errorData.error || "Could not find coordinates for this address.")
       }
     } catch (error) {
       console.error('Geocoding error:', error)
-      alert("Error getting coordinates. Please try again.")
+      alert("Error getting coordinates. Please check your internet connection and try again.")
     }
   }
 

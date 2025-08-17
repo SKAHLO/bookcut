@@ -304,7 +304,6 @@ export default function HomePage() {
 
               {!showForgotPassword && !showResetPassword && (
                 <>
-                  {/* NUCLEAR GOOGLE AUTH - NO MORE CACHING ISSUES! */}
                   <div className="space-y-3 mb-6">
                     {!isLogin && (
                       <div>
@@ -333,24 +332,6 @@ export default function HomePage() {
                         </Tabs>
                       </div>
                     )}
-
-                    {/* SIMPLE GOOGLE AUTH BUTTON - NO 404 ERRORS */}
-                    <GoogleAuthSimple
-                      userType={!isLogin ? formData.userType as "user" | "barber" : undefined}
-                      onSuccess={handleGoogleSuccess}
-                      onError={handleGoogleError}
-                      disabled={isSubmitting}
-                      isSignup={!isLogin}
-                    />
-
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t border-gray-300" />
-                      </div>
-                      <div className="relative flex justify-center text-sm">
-                        <span className="px-2 bg-white text-gray-500">Or continue with email</span>
-                      </div>
-                    </div>
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-4">
