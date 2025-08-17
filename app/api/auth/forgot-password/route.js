@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import crypto from "crypto"
+import bcrypt from "bcryptjs"
 import clientPromise from "@/lib/mongodb"
+import { sendPasswordResetEmail } from "@/lib/email"
 
 export async function POST(request) {
   try {
@@ -13,8 +15,15 @@ export async function POST(request) {
     const client = await clientPromise
     const db = client.db("bookcut")
 
-    // Find user
-    const user = await db.collection("users").findOne({ email })
+    // Find user in both collections
+    let user = await db.collection("users").findOne({ email })
+    let collection = "users"
+    
+    if (!user) {
+      user = await db.collection("barbers").findOne({ email })
+      collection = "barbers"
+    }
+    
     if (!user) {
       // Return success even if user doesn't exist for security
       return NextResponse.json({ message: "If an account with that email exists, we've sent a password reset link." })
@@ -25,7 +34,7 @@ export async function POST(request) {
     const resetTokenExpiry = new Date(Date.now() + 3600000) // 1 hour from now
 
     // Save reset token to user document
-    await db.collection("users").updateOne(
+    await db.collection(collection).updateOne(
       { email },
       {
         $set: {
@@ -35,9 +44,15 @@ export async function POST(request) {
       }
     )
 
-    // In a real app, you would send an email here
-    // For now, we'll just return the token (remove this in production)
-    console.log(`Password reset token for ${email}: ${resetToken}`)
+    // Send password reset email
+    const emailResult = await sendPasswordResetEmail(email, resetToken)
+    
+    if (emailResult.success) {
+      console.log(`Password reset email sent to ${email}`)
+    } else {
+      console.error(`Failed to send email to ${email}:`, emailResult.error)
+      // Still return success for security, but log the error
+    }
 
     return NextResponse.json({ 
       message: "If an account with that email exists, we've sent a password reset link."

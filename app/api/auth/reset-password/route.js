@@ -17,11 +17,20 @@ export async function POST(request) {
     const client = await clientPromise
     const db = client.db("bookcut")
 
-    // Find user with valid reset token
-    const user = await db.collection("users").findOne({
+    // Find user with valid reset token in both collections
+    let user = await db.collection("users").findOne({
       resetToken: token,
       resetTokenExpiry: { $gt: new Date() }
     })
+    
+    let collection = "users"
+    if (!user) {
+      user = await db.collection("barbers").findOne({
+        resetToken: token,
+        resetTokenExpiry: { $gt: new Date() }
+      })
+      collection = "barbers"
+    }
 
     if (!user) {
       return NextResponse.json({ error: "Invalid or expired reset token" }, { status: 400 })
@@ -31,7 +40,7 @@ export async function POST(request) {
     const hashedPassword = await bcrypt.hash(password, 12)
 
     // Update user password and remove reset token
-    await db.collection("users").updateOne(
+    await db.collection(collection).updateOne(
       { _id: user._id },
       {
         $set: { password: hashedPassword },

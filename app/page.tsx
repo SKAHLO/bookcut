@@ -36,6 +36,17 @@ export default function HomePage() {
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("")
 
   useEffect(() => {
+    // Check for reset token in URL
+    const urlParams = new URLSearchParams(window.location.search)
+    const tokenFromUrl = urlParams.get('resetToken')
+    if (tokenFromUrl) {
+      setResetToken(tokenFromUrl)
+      setShowResetPassword(true)
+      setShowForgotPassword(false)
+      // Clean URL
+      window.history.replaceState({}, '', '/')
+    }
+
     if (!loading && user) {
       console.log("User authenticated, redirecting based on userType:", user.userType)
       if (user.userType === "barber") {
@@ -233,7 +244,19 @@ export default function HomePage() {
                     {isSubmitting ? "Sending..." : "Send Reset Link"}
                   </Button>
 
-                  <div className="text-center">
+                  <div className="text-center space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowResetPassword(true)
+                        setShowForgotPassword(false)
+                      }}
+                      className="text-[#FF6B35] hover:underline block w-full"
+                      disabled={isSubmitting}
+                    >
+                      Already have a reset token?
+                    </button>
+                    
                     <button
                       type="button"
                       onClick={() => {
@@ -285,20 +308,33 @@ export default function HomePage() {
                     {isSubmitting ? "Resetting..." : "Reset Password"}
                   </Button>
 
-                  <div className="text-center">
+                  <div className="text-center space-y-2">
+                  <button
+                  type="button"
+                  onClick={() => {
+                  setShowForgotPassword(true)
+                  setShowResetPassword(false)
+                  }}
+                  className="text-[#FF6B35] hover:underline block w-full"
+                  disabled={isSubmitting}
+                  >
+                    Don't have a token? Request reset
+                  </button>
+                  
                     <button
-                      type="button"
-                      onClick={() => {
-                        setShowResetPassword(false)
-                        setResetToken("")
-                        setNewPassword("")
-                      }}
-                      className="text-[#FF6B35] hover:underline"
-                      disabled={isSubmitting}
-                    >
-                      Back to Sign In
-                    </button>
-                  </div>
+                       type="button"
+                       onClick={() => {
+                         setShowResetPassword(false)
+                         setShowForgotPassword(false)
+                         setResetToken("")
+                         setNewPassword("")
+                       }}
+                       className="text-[#FF6B35] hover:underline"
+                       disabled={isSubmitting}
+                     >
+                       Back to Sign In
+                     </button>
+                   </div>
                 </form>
               )}
 
