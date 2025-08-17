@@ -318,7 +318,7 @@ export default function HomePage() {
                   className="text-[#FF6B35] hover:underline block w-full"
                   disabled={isSubmitting}
                   >
-                    Don't have a token? Request reset
+                    Don&apos;t have a token? Request reset
                   </button>
                   
                     <button
@@ -449,7 +449,7 @@ export default function HomePage() {
                       className="text-[#FF6B35] hover:underline"
                       disabled={isSubmitting}
                     >
-                      {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+                      {isLogin ? "Don&apos;t have an account? Sign up" : "Already have an account? Sign in"}
                     </button>
                   </div>
                 </>

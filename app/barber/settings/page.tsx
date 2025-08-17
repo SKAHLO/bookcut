@@ -213,7 +213,7 @@ export default function BarberSettings() {
 
   const changePassword = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert("New passwords don't match")
+      alert("New passwords don&apos;t match")
       return
     }
 
